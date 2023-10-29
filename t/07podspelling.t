@@ -7,18 +7,18 @@ use lib               catdir( $Bin, updir, 'lib' );
 use Test::More;
 
 BEGIN {
-   $ENV{AUTHOR_TESTING}
-      or plan skip_all => 'POD spelling test only for developers';
+   plan skip_all => 'POD spelling test only for developers'
+      unless $ENV{AUTHOR_TESTING};
 }
 
 use English qw( -no_match_vars );
 
 eval "use Test::Spelling";
 
-$EVAL_ERROR and plan skip_all => 'Test::Spelling required but not installed';
+plan skip_all => 'Test::Spelling required but not installed' if $EVAL_ERROR;
 
-$ENV{TEST_SPELLING}
-   or plan skip_all => 'Environment variable TEST_SPELLING not set';
+plan skip_all => 'Environment variable TEST_SPELLING not set'
+   unless $ENV{TEST_SPELLING};
 
 my $checker = has_working_spellchecker(); # Aspell is prefered
 
@@ -41,4 +41,6 @@ __DATA__
 peter
 flanigan
 Class::Usul::Cmd
+localiser
+localizer
 merchantability

@@ -1,19 +1,14 @@
 package Class::Usul::Cmd;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 1 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
 
-use Class::Usul::Constants;
-use Class::Usul::Functions  qw( throw );
+use Class::Usul::Cmd::Constants qw( TRUE );
+use Class::Usul::Cmd::Types     qw( ConfigProvider Localiser Logger );
+use Class::Usul::Cmd::Util      qw( merge_attributes );
+use Class::Null;
 use Moo;
-
-extends 'Class::Usul::Programs';
-
-use namespace::autoclean;
-
-1;
-
-__END__
+use Class::Usul::Cmd::Options;
 
 =pod
 
@@ -21,14 +16,36 @@ __END__
 
 =head1 Name
 
-Class::Usul::Cmd - One-line description of the modules purpose
+Class::Usul::Cmd - Command line support framework
 
 =head1 Synopsis
 
-   use Class::Usul::Cmd;
-   # Brief but working code examples
+   package Test;
+
+   our $VERSION = 0.1;
+
+   use Moo;
+   use Class::Usul::Cmd::Options;
+
+   extends 'Class::Usul::Cmd';
+
+   option 'test_attr' => is => 'ro';
+
+   sub test_method : method {
+   }
+
+   ...
+
+   # In bin/test_script
+   exit Test->new_with_options(config => Test::Config->new())->run;
+
+   ...
+
+   bin/test_script --test-attr foo test-method
 
 =head1 Description
+
+Command line support framework
 
 =head1 Configuration and Environment
 
@@ -36,17 +53,86 @@ Defines the following attributes;
 
 =over 3
 
+=item C<config>
+
+A required object reference used to provide configuration attributes. See
+the L<config provider|Class::Usul::Cmd::Types/ConfigProvider> type
+
+=cut
+
+has 'config' => is => 'ro', isa => ConfigProvider, required => TRUE;
+
+=item C<l10n>
+
+An optional object reference which is used to localise text messages.  See the
+L<localiser|Class::Usul::Cmd::Types/Localiser> type
+
+=cut
+
+has 'l10n' => is => 'ro', isa => Localiser, predicate => 'has_l10n';
+
+=item C<log>
+
+An object reference which defaults to L<Class::Null>. See the
+L<logger|Class::Usul::Cmd::Types/Logger> type
+
+=cut
+
+has 'log' => is => 'ro', isa => Logger, default => sub { Class::Null->new };
+
+with 'Class::Usul::Cmd::Trait::IPC';
+with 'Class::Usul::Cmd::Trait::OutputLogging';
+with 'Class::Usul::Cmd::Trait::Prompting';
+with 'Class::Usul::Cmd::Trait::DebugFlag';
+with 'Class::Usul::Cmd::Trait::Usage';
+with 'Class::Usul::Cmd::Trait::RunningMethods';
+
 =back
 
 =head1 Subroutines/Methods
 
+=over 3
+
+=item C<BUILDARGS>
+
+If the constructor is called with a C<builder> attribute (either an object
+reference or a hash reference) it's C<config>, C<l10n>, and C<log> attributes
+are used to instantiate the attributes of the same name in this class
+
+=cut
+
+around 'BUILDARGS' => sub {
+   my ($orig, $self, @args) = @_;
+
+   my $attr = $orig->($self, @args);
+   my $builder = $attr->{builder} or return $attr;
+
+   merge_attributes $attr, $builder, [qw(config l10n log)];
+
+   return $attr;
+};
+
+use namespace::autoclean;
+
+1;
+
+__END__
+
+=item C<has_l10n>
+
+Predicate
+
+=back
+
 =head1 Diagnostics
+
+None
 
 =head1 Dependencies
 
 =over 3
 
-=item L<Class::Usul>
+=item L<Moo>
 
 =back
 

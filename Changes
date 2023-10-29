@@ -1,5 +1,7 @@
 Revision history for Class::Usul::Cmd
 
+          - Added POD. Started adding tests
+
 0.1.1     2023-03-13 04:04:33
           - Added project files to master branch
 
