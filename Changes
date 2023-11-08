@@ -1,5 +1,6 @@
 Revision history for Class::Usul::Cmd
 
+          - Fixes missing predicate coverage
           - Completed util test script
           - Flipped default on debug prompt. Removed noask/nodebug
           - Removed process table methods

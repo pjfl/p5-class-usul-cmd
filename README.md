@@ -42,12 +42,12 @@ Defines the following attributes;
 
 - `l10n`
 
-    An optional object reference which is used to localise text messages.  See the
+    An optional object reference used to localise text messages.  See the
     [localiser](https://metacpan.org/pod/Class%3A%3AUsul%3A%3ACmd%3A%3ATypes#Localiser) type
 
 - `log`
 
-    An object reference which defaults to [Class::Null](https://metacpan.org/pod/Class%3A%3ANull). See the
+    An optional object reference used to log text messages. See the
     [logger](https://metacpan.org/pod/Class%3A%3AUsul%3A%3ACmd%3A%3ATypes#Logger) type
 
 # Subroutines/Methods
@@ -59,6 +59,10 @@ Defines the following attributes;
     are used to instantiate the attributes of the same name in this class
 
 - `has_l10n`
+
+    Predicate
+
+- `has_log`
 
     Predicate
 

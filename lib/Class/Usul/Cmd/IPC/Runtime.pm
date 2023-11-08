@@ -186,6 +186,10 @@ has 'keep_fhs' =>
 
 A log object. Calls are made to it at the debug level
 
+=item C<has_log>
+
+Predicate
+
 =cut
 
 has 'log' => is => 'ro', isa => Logger, predicate => 'has_log';
