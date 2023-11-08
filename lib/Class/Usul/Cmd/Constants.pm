@@ -3,8 +3,8 @@ package Class::Usul::Cmd::Constants;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use Ref::Util qw( is_arrayref );
 use Class::Usul::Cmd::Exception;
+use Ref::Util qw( is_arrayref );
 
 our @EXPORT = qw( BRK DOT DEFAULT_ENCODING DUMP_EXCEPT EXCEPTION_CLASS FAILED
                   FALSE LOG_LEVELS NO NUL OK QUIT QUOTED_RE SPC TRUE
@@ -12,6 +12,8 @@ our @EXPORT = qw( BRK DOT DEFAULT_ENCODING DUMP_EXCEPT EXCEPTION_CLASS FAILED
                   WIDTH YES );
 
 =pod
+
+=encoding utf-8
 
 =head1 Name
 
@@ -41,7 +43,7 @@ List of methods to exclude from dumping out when introspecting objects
 =cut
 
 my $Dump_Except = [
-   qw( BUILDARGS BUILD DOES inflate_path inflate_paths inflate_symbol new )
+   qw( BUILDARGS BUILD DOES after around before extends has new with )
 ];
 
 sub Dump_Except {

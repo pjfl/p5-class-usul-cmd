@@ -69,7 +69,7 @@ There are no known incompatibilities in this module
 =head1 Bugs and Limitations
 
 There are no known bugs in this module. Please report problems to
-http://rt.cpan.org/NoAuth/Bugs.html?Dist=Class-Usul.
+http://rt.cpan.org/NoAuth/Bugs.html?Dist=Class-Usul-Cmd.
 Patches are welcome
 
 =head1 Acknowledgements

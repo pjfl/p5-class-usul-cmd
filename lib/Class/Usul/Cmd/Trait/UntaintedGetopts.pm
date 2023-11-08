@@ -1,9 +1,9 @@
 package Class::Usul::Cmd::Trait::UntaintedGetopts;
 
 use Class::Usul::Cmd::Constants qw( FAILED NUL QUOTED_RE TRUE );
-use Class::Usul::Cmd::Util      qw( emit_err untaint_cmdline );
 use Class::Usul::Cmd::Getopt    qw( describe_options );
 use Class::Usul::Cmd::Types     qw( ArrayRef );
+use Class::Usul::Cmd::Util      qw( emit_err untaint_cmdline );
 use Encode                      qw( decode );
 use JSON::MaybeXS               qw( decode_json );
 use Scalar::Util                qw( blessed );

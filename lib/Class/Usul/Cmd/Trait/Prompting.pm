@@ -1,8 +1,8 @@
 package Class::Usul::Cmd::Trait::Prompting;
 
 use Class::Usul::Cmd::Constants qw( BRK FAILED FALSE NO NUL QUIT SPC TRUE YES );
-use Class::Usul::Cmd::Util      qw( arg_list emit_to pad throw );
 use Class::Usul::Cmd::Types     qw( PositiveInt );
+use Class::Usul::Cmd::Util      qw( arg_list emit_to pad throw );
 use English                     qw( -no_match_vars );
 use Ref::Util                   qw( is_hashref );
 use IO::Interactive;

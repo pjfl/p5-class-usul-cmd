@@ -1,8 +1,8 @@
 package Class::Usul::Cmd::Trait::DebugFlag;
 
-use Class::Usul::Cmd::Constants qw( FALSE TRUE );
-use Class::Usul::Cmd::Util      qw( ns_environment );
+use Class::Usul::Cmd::Constants qw( FALSE NUL TRUE );
 use Class::Usul::Cmd::Types     qw( Bool );
+use Class::Usul::Cmd::Util      qw( ns_environment );
 use Moo::Role;
 use Class::Usul::Cmd::Options;
 
@@ -45,40 +45,27 @@ option 'debug' =>
    default       => sub {
       return !!ns_environment($_[0]->config->appclass, 'debug') ? TRUE : FALSE;
    },
-   documentation => 'Turn debugging on. Prompts if interactive',
+   documentation => 'Turn debugging on',
    lazy          => TRUE,
    short         => 'D';
 
-=item C<n noask>
+=item C<debug_prompt>
 
-Do not prompt to turn debugging on
+Prompt to turn debugging on. Defaults false
 
 =cut
 
-option 'noask' =>
-   is             => 'ro',
-   isa            => Bool,
-   default        => FALSE,
-   documentation  => 'Do not prompt for debugging',
-   short          => 'n';
+has '_debug_prompt' =>
+   is       => 'ro',
+   isa      => Bool,
+   default  => FALSE,
+   init_arg => 'debug_prompt';
 
 =back
 
 =head1 Subroutines/Methods
 
 =over 3
-
-=cut
-
-around 'BUILDARGS' => sub {
-   my ($orig, $self, @args) = @_;
-
-   my $attr = $orig->($self, @args);
-   my $deprecated = delete $attr->{nodebug};
-
-   $attr->{noask} //= $deprecated;
-   return $attr;
-};
 
 =item C<BUILD>
 
@@ -103,18 +90,22 @@ Returns the command line debug flag to match the current debug state
 =cut
 
 sub debug_flag {
-   my $self = shift; return $self->debug ? '-D' : '-n';
+   my $self = shift;
+
+   return $self->debug ? '-D' : NUL;
 }
 
 # Private methods
 sub _dont_ask {
-   my $self = shift; return $self->debug || !$self->is_interactive();
+   my $self = shift;
+
+   return $self->debug || !$self->is_interactive();
 }
 
 sub _get_debug_option {
    my $self = shift;
 
-   return $self->debug if $self->noask or $self->_dont_ask;
+   return $self->debug if !$self->_debug_prompt or $self->_dont_ask;
 
    return $self->yorn('Do you want debugging turned on', FALSE, TRUE);
 }

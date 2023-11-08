@@ -1,10 +1,10 @@
 package Class::Usul::Cmd::Trait::RunningMethods;
 
 use Class::Usul::Cmd::Constants qw( DOT FAILED NUL OK TRUE UNDEFINED_RV );
+use Class::Usul::Cmd::Types     qw( ArrayRef HashRef Int SimpleStr );
 use Class::Usul::Cmd::Util      qw( dash2under delete_tmp_files elapsed emit_to
                                     exception is_member logname throw
                                     untaint_identifier );
-use Class::Usul::Cmd::Types     qw( ArrayRef HashRef Int SimpleStr );
 use English                     qw( -no_match_vars );
 use File::DataClass::Types      qw( OctalNum );
 use Ref::Util                   qw( is_hashref );
@@ -44,7 +44,7 @@ Defines the following command line options;
 
 =item C<c method>
 
-The method in the subclass to dispatch to
+The method in the program class to dispatch to
 
 =cut
 
@@ -60,7 +60,7 @@ option 'method' =>
 =item C<o options key=value>
 
 The method that is dispatched to can access the key/value pairs
-from the C<< $self->options >> hash ref
+from the C<< $self->options >> hash reference
 
 =cut
 
@@ -112,22 +112,6 @@ Defines the following attributes;
 
 =over 3
 
-=item C<name>
-
-Method name prepended with last part of classname
-
-=cut
-
-has 'name' =>
-   is      => 'lazy',
-   isa     => SimpleStr,
-   default => sub {
-      my $self   = shift;
-      my $prefix = (split m{ :: }mx, blessed($self))[-1];
-
-      return $prefix . DOT . $self->method;
-   };
-
 =item C<params>
 
 A hash reference keyed by method name. The values are array references which
@@ -135,10 +119,29 @@ are flattened and passed to the method call by L</run>
 
 =cut
 
-has 'params' =>
-   is      => 'lazy',
-   isa     => HashRef[ArrayRef],
-   default => sub { {} };
+has '_run_params' =>
+   is       => 'lazy',
+   isa      => HashRef[ArrayRef],
+   default  => sub { {} },
+   init_arg => 'params';
+
+=item C<name>
+
+A simple string which defaults to the last part of the program classname
+and the method name. Appears as the leader in output, errors, and log lines
+
+=cut
+
+has '_name' =>
+   is       => 'lazy',
+   isa      => SimpleStr,
+   default  => sub {
+      my $self   = shift;
+      my $prefix = (split m{ :: }mx, blessed($self))[-1];
+
+      return $prefix . DOT . $self->method;
+   },
+   init_arg => 'name';
 
 =back
 
@@ -157,33 +160,33 @@ Handles the result of calling the command
 sub handle_result {
    my ($self, $method, $rv) = @_;
 
-   my $params      = $self->params->{$method};
+   my $params      = $self->_run_params->{$method};
    my $args        = (defined $params ) ? $params->[0] : undef;
    my $expected_rv = (is_hashref $args) ? $args->{expected_rv} // OK : OK;
 
    if (defined $rv and $rv <= $expected_rv) {
       $self->output('Finished in [_1] seconds', {
-         args => [elapsed], name => $self->name
+         args => [elapsed], name => $self->_name
       }) unless $self->quiet;
    }
    elsif (defined $rv and $rv > OK) {
       $self->error('Terminated code [_1]', {
-         args => [$rv], name => $self->name, no_quote_bind_values => TRUE
+         args => [$rv], name => $self->_name, no_quote_bind_values => TRUE
       });
    }
    else {
       if ($rv == UNDEFINED_RV) {
-         $self->error('Terminated with undefined rv', { name => $self->name });
+         $self->error('Terminated with undefined rv', { name => $self->_name });
       }
       else {
          if (defined $rv) {
             $self->error('Method [_1] unknown rv [_2]', {
-               args => [$method, $rv], name => $self->name
+               args => [$method, $rv], name => $self->_name
             });
          }
          else {
             $self->error('Method [_1] error uncaught or rv undefined', {
-               args => [$method], name => $self->name
+               args => [$method], name => $self->_name
             });
             $rv = UNDEFINED_RV;
          }
@@ -207,7 +210,7 @@ sub run {
    my $method = $self->select_method;
    my $text   = 'Started by [_1] Version [_2] Pid [_3]';
    my $args   = {
-      args => [logname, $self->app_version, abs $PID], name => $self->name
+      args => [logname, $self->app_version, abs $PID], name => $self->_name
    };
 
    $self->quiet(TRUE) if is_member $method, 'help', 'run_chain';
@@ -218,8 +221,8 @@ sub run {
    my $rv;
 
    if ($method eq 'run_chain' or $self->can_call($method)) {
-      my $params = exists $self->params->{$method}
-         ? $self->params->{$method} : [];
+      my $params = exists $self->_run_params->{$method}
+         ? $self->_run_params->{$method} : [];
 
       try {
          $rv = $self->$method(@{$params});
@@ -230,7 +233,7 @@ sub run {
    }
    else {
       $self->error('Class [_1] method [_2] not found', {
-         args => [ blessed $self, $method ]
+         args => [ blessed $self, $method ], name => $self->_name
       });
       $rv = UNDEFINED_RV;
    }
@@ -253,10 +256,14 @@ Returns exit code C<FAILED>
 
 sub run_chain {
    my $self = shift;
-   my $args = { args => [$self->method] };
 
-   $self->method ? $self->error('Method [_1] unknown', $args)
-                 : $self->error('Method not specified');
+   if ($self->method) {
+      $self->error('Method [_1] unknown', {
+         args => [$self->method], name => $self->_name
+      });
+   }
+   else { $self->error('Method not specified', { name => $self->_name }) }
+
    $self->exit_usage(0);
    return; # Not reached
 }
@@ -293,14 +300,15 @@ sub _handle_run_exception {
    my $e;
 
    unless ($e = exception $error) {
-      $self->error(
-         'Method [_1] exception without error', { args => [$method] }
-      );
+      $self->error('Method [_1] exception without error', {
+         args => [$method], name => $self->_name
+      });
       return UNDEFINED_RV;
    }
 
-   $self->output($e->out) if $e->can('out') && $e->out;
-   $self->error($e->error, { args => $e->args });
+   $self->output($e->out, { name => $self->_name })
+      if $e->can('out') && $e->out;
+   $self->error($e->error, { args => $e->args, name => $self->_name });
    _output_stacktrace($error, $self->verbose) if $self->debug;
 
    return $e->can('rv')

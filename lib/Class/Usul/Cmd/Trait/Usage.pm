@@ -3,11 +3,11 @@ package Class::Usul::Cmd::Trait::Usage;
 use attributes ();
 
 use Class::Usul::Cmd::Constants qw( DUMP_EXCEPT FAILED FALSE NUL OK SPC TRUE );
+use Class::Usul::Cmd::Types     qw( ArrayRef Bool DataEncoding Str );
 use Class::Usul::Cmd::Util      qw( dash2under data_dumper emit emit_to
                                     ensure_class_loaded find_source is_member
                                     list_attr_of pad tempfile throw
                                     untaint_cmdline untaint_identifier );
-use Class::Usul::Cmd::Types     qw( ArrayRef Bool DataEncoding Str );
 use English                     qw( -no_match_vars );
 use File::DataClass::IO         qw( io );
 use File::DataClass::Types      qw( File );
@@ -204,7 +204,7 @@ before 'BUILD' => sub {
    $self->exit_usage(0) if $self->help_usage;
    $self->exit_usage(1) if $self->help_options;
    $self->exit_usage(2) if $self->help_manual;
-   $self->exit_version  if $self->show_version;
+   $self->_exit_version if $self->show_version;
    return;
 };
 
@@ -232,14 +232,14 @@ sub can_call {
    return $_can_call_cache->{$wanted};
 }
 
-=item C<dump_config_attr> - Dumps the configuration attributes and values
+=item C<dump_config> - Dumps the configuration attributes and values
 
 Visits the configuration object, forcing evaluation of the lazy, and printing
 out the attributes and values
 
 =cut
 
-sub dump_config_attr : method {
+sub dump_config : method {
    my $self    = shift;
    my $methods = [];
    my %seen    = ();
@@ -285,9 +285,9 @@ sub dumper {
 
 =item C<exit_usage>
 
-   $self->exit_version;
+   $self->exit_usage( $level );
 
-Prints out the version of the C::U::Programs subclass and the exits
+Prints out the usage information at the given level of verbosity
 
 =cut
 
@@ -301,19 +301,6 @@ sub exit_usage {
    if ($level == 0) { emit "\nMethods:\n"; $self->list_methods }
 
    exit $rv;
-}
-
-=item C<exit_version>
-
-Outputs the application class version and exits C<OK>
-
-=cut
-
-sub exit_version {
-   my $self = shift;
-
-   $self->output('Version ' . $self->app_version);
-   exit OK;
 }
 
 =item C<help> - Display help text about a method
@@ -390,6 +377,13 @@ sub _apply_stdio_encoding {
    return;
 }
 
+sub _exit_version {
+   my $self = shift;
+
+   $self->output('Version ' . $self->app_version);
+   exit OK;
+}
+
 sub _get_classes_and_roles {
    my ($self, $target) = @_;
 
@@ -437,6 +431,29 @@ sub _man_page_from {
    return OK;
 }
 
+sub _output_usage {
+   my ($self, $verbose) = @_;
+
+   my $method = $self->next_argv;
+
+   $method = untaint_identifier dash2under $method if defined $method;
+
+   return $self->_usage_for($method) if $self->can_call($method);
+
+   return $self->_man_page_from($self->_pathname) if $verbose > 1;
+
+   ensure_class_loaded 'Pod::Usage';
+   Pod::Usage::pod2usage({
+      -exitval => OK,
+      -input   => $self->_pathname . NUL,
+      -message => SPC,
+      -verbose => $verbose
+   }) if $verbose > 0; # Never returns
+
+   emit_to \*STDERR, $self->options_usage;
+   return FAILED;
+}
+
 sub _usage_for {
    my ($self, $method) = @_;
 
@@ -458,29 +475,6 @@ sub _usage_for {
    }
 
    emit_to \*STDERR, "Method ${method} no documentation found\n";
-   return FAILED;
-}
-
-sub _output_usage {
-   my ($self, $verbose) = @_;
-
-   my $method = $self->next_argv;
-
-   $method = untaint_identifier dash2under $method if defined $method;
-
-   return $self->_usage_for($method) if $self->can_call($method);
-
-   return $self->_man_page_from($self->config) if $verbose > 1;
-
-   ensure_class_loaded 'Pod::Usage';
-   Pod::Usage::pod2usage({
-      -exitval => OK,
-      -input   => $self->_pathname . NUL,
-      -message => SPC,
-      -verbose => $verbose
-   }) if $verbose > 0; # Never returns
-
-   emit_to \*STDERR, $self->options_usage;
    return FAILED;
 }
 

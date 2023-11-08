@@ -1,8 +1,10 @@
 package Class::Usul::Cmd::Trait::OutputLogging;
 
 use Class::Usul::Cmd::Constants qw( BRK FAILED FALSE NUL TRUE WIDTH );
-use Class::Usul::Cmd::Util      qw( abs_path emit emit_err throw );
 use Class::Usul::Cmd::Types     qw( Bool SimpleStr );
+use Class::Usul::Cmd::Util      qw( abs_path emit emit_err throw );
+use English                     qw( -no_match_vars );
+use File::Basename              qw( );
 use Ref::Util                   qw( is_arrayref );
 use Text::Autoformat            qw( autoformat );
 use Unexpected::Functions       qw( inflate_placeholders );
@@ -83,6 +85,26 @@ option 'quiet' =>
    short         => 'q';
 
 # Private attributes
+has '_name' =>
+   is      => 'lazy',
+   isa     => SimpleStr,
+   default => sub {
+      my $self = shift;
+      my $config = $self->config;
+      my @suffixes = qw(.pm .t);
+
+      return ucfirst $config->name if $config->can('name');
+
+      return File::Basename::basename($config->pathname, @suffixes)
+         if $config->can('pathname');
+
+      my $name = $PROGRAM_NAME;
+
+      $name = $EXECUTABLE_NAME if '-' eq substr $name, 0, 1;
+
+      return File::Basename::basename($name, @suffixes);
+   };
+
 has '_quiet_flag' =>
    is      => 'rwp',
    isa     => Bool,
@@ -112,7 +134,8 @@ sub add_leader {
 
    $opts //= {};
 
-   my $leader = $opts->{no_lead} ? NUL : (ucfirst $self->config->name) . BRK;
+   my $leader = $opts->{no_lead} ? NUL
+      : ($opts->{name} ? $opts->{name} : $self->_name) . BRK;
 
    if ($opts->{fill}) {
       my $width = $opts->{width} // WIDTH;
@@ -139,7 +162,9 @@ sub error {
 
    $text = $self->_loc($text, $opts);
 
-   $self->log->error($_) for (split m{ \n }mx, "${text}");
+   if ($self->has_log) {
+      $self->log->error($_) for (split m{ \n }mx, "${text}");
+   }
 
    emit_err $self->add_leader($text, $opts);
 
@@ -165,7 +190,9 @@ sub fatal {
 
    $text = $self->_loc($text, $opts) . $posn;
 
-   $self->log->alert($_) for (split m{ \n }mx, $text);
+   if ($self->has_log) {
+      $self->log->alert($_) for (split m{ \n }mx, $text);
+   }
 
    emit_err $self->add_leader($text, $opts);
 
@@ -188,7 +215,9 @@ sub info {
    $opts //= {};
    $text = $self->_loc($text, $opts, TRUE);
 
-   $self->log->info($_) for (split m{ [\n] }mx, $text);
+   if ($self->has_log) {
+      $self->log->info($_) for (split m{ \n }mx, $text);
+   }
 
    emit $self->add_leader($text, $opts) unless $self->quiet or $opts->{quiet};
 
@@ -297,7 +326,9 @@ sub warning {
    $opts //= {};
    $text = $self->_loc($text, $opts);
 
-   $self->log->warn($_) for (split m{ \n }mx, $text);
+   if ($self->has_log) {
+      $self->log->warn($_) for (split m{ \n }mx, $text);
+   }
 
    emit $self->add_leader($text, $opts) unless $self->quiet || $opts->{quiet};
 

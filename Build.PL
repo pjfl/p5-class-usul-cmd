@@ -42,6 +42,7 @@ my $prereqs  = {
     'strictures' => '2.000006'
   },
   'test_requires' => {
+    'Capture::Tiny' => '0.22',
     'File::Spec' => '0',
     'Module::Build' => '0.4004',
     'Module::Metadata' => '0',

@@ -137,7 +137,7 @@ sub _has_log_level_methods {
 
 sub _has_min_config_attributes {
    my $obj = shift;
-   my @config_attr = (qw(appclass pathname name));
+   my @config_attr = (qw(appclass));
 
    $obj->can($_) or return FALSE for (@config_attr);
 

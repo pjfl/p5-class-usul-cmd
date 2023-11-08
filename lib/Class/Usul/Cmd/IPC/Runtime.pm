@@ -2,12 +2,12 @@ package Class::Usul::Cmd::IPC::Runtime;
 
 use Class::Usul::Cmd::Constants qw( EXCEPTION_CLASS FALSE NUL OK SPC TRUE
                                     UNDEFINED_RV );
-use Class::Usul::Cmd::Util      qw( arg_list emit_to is_member is_win32
-                                    nap nonblocking_write_pipe_pair
-                                    strip_leader tempdir throw );
 use Class::Usul::Cmd::Types     qw( ArrayRef Bool LoadableClass Logger
                                     NonEmptySimpleStr Num Object PositiveInt
                                     SimpleStr Str Undef );
+use Class::Usul::Cmd::Util      qw( arg_list emit_to is_member is_win32
+                                    nap nonblocking_write_pipe_pair
+                                    strip_leader tempdir throw );
 use English                     qw( -no_match_vars );
 use File::Basename              qw( basename );
 use File::DataClass::IO         qw( io );
@@ -81,21 +81,37 @@ Boolean defaults to false. If true the call to C<run_cmd> will return without
 waiting for the child process to complete. If true the C<ignore_zombies>
 attribute will default to true
 
+=cut
+
+has 'async' => is => 'ro', isa => Bool, default => FALSE;
+
 =item C<close_all_files>
 
 Boolean defaults to false. If true and the C<detach> attribute is also true
 then all open file descriptors in the child are closed except those in the
 C<keep_fhs> list attribute
 
+=cut
+
+has 'close_all_files' => is => 'ro', isa => Bool, default => FALSE;
+
 =item C<cmd>
 
 An array reference or a simple string. Required. The external command to
 execute
 
+=cut
+
+has 'cmd' => is => 'ro', isa => ArrayRef|Str, required => TRUE;
+
 =item C<detach>
 
 Boolean defaults to false. If true the child process will double fork, set
 the session id and ignore hangup signals
+
+=cut
+
+has 'detach' => is => 'ro', isa => Bool, default => FALSE;
 
 =item C<err>
 
@@ -104,10 +120,18 @@ Determines where the standard error of the command will be redirected to.
 Values are the same as for C<out>. Additionally a value of 'out' will
 redirect standard error to standard output
 
+=cut
+
+has 'err' => is => 'ro', isa => Path|SimpleStr, default => NUL;
+
 =item C<expected_rv>
 
 Positive integer default to zero. The maximum return value which is
 considered a success
+
+=cut
+
+has 'expected_rv' => is => 'ro', isa => PositiveInt, default => 0;
 
 =item C<ignore_zombies>
 
@@ -115,6 +139,13 @@ Boolean defaults to false unless the C<async> attribute is true in which case
 this attribute also defaults to true. If true ignores child processes. If you
 plan to call C<waitpid> to wait for the child process to finish you should
 set this to false
+
+=cut
+
+has 'ignore_zombies' =>
+   is      => 'lazy',
+   isa     => Bool,
+   builder => sub { ($_[0]->async || $_[0]->detach) ? TRUE : FALSE };
 
 =item C<in>
 
@@ -124,25 +155,58 @@ Object references should stringify to the name of the file containing input.
 A scalar is the input unless it is 'stdin' or 'null' which cause redirection
 from standard input and the null device
 
+=cut
+
+has 'in' =>
+   is      => 'ro',
+   isa     => Path|SimpleStr,
+   coerce  => sub { (is_arrayref $_[0]) ? join $RS, @{$_[0]} : $_[0] },
+   default => NUL;
+
 =item C<keep_fhs>
 
 An array reference of file handles that are to be left open in detached
 children
 
+=cut
+
+has 'keep_fhs' =>
+   is      => 'lazy',
+   isa     => ArrayRef,
+   builder => sub {
+      my $self = shift;
+
+      return [$self->log->filehandle]
+         if $self->has_log && $self->log->can('filehandle');
+
+      return [];
+   };
+
 =item C<log>
 
-A log object defaults to an instance of L<Class::Null>. Calls are made to
-it at the debug level
+A log object. Calls are made to it at the debug level
+
+=cut
+
+has 'log' => is => 'ro', isa => Logger, predicate => 'has_log';
 
 =item C<max_pidfile_wait>
 
 Positive integer defaults to 15. The maximum number of seconds the parent
 process should wait for the child's PID file to appear and be populated
 
+=cut
+
+has 'max_pidfile_wait' => is => 'ro', isa => PositiveInt, default => 15;
+
 =item C<nap_time>
 
 Positive number defaults to 0.3. The number of seconds to wait between testing
 for the existence of the child's PID file
+
+=cut
+
+has 'nap_time' => is => 'ro', isa => Num, default => 0.3;
 
 =item C<out>
 
@@ -167,94 +231,26 @@ output will be redirected
 
 =back
 
+=cut
+
+has 'out' => is => 'ro', isa => Path|SimpleStr, default => NUL;
+
 =item C<partition_cmd>
 
-Boolean default to true. If the L<IPC::Run> implementation is selected the
+Boolean defaults to true. If the L<IPC::Run> implementation is selected the
 command array reference will be partitioned on meta character boundaries
 unless this attribute is set to false
+
+=cut
+
+has 'partition_cmd' => is => 'ro', isa => Bool, default => TRUE;
 
 =item C<pidfile>
 
 A L<File::DataClass::IO> object reference. Defaults to a temporary file
 in the configuration C<rundir> which will automatically unlink when closed
 
-=item C<rundir>
-
-A L<File::DataClass::IO> object reference. Defaults to the C<tempdir>
-attribute. Directory in which the PID files a stored
-
-=item C<tempdir>
-
-A L<File::DataClasS::IO> object reference. Defaults to C<tmpdir> from
-L<File::Spec>. The directory for storing temporary files
-
-=item C<timeout>
-
-Positive integer defaults to 0. If greater then zero an alarm will be raised
-after this many seconds if the external command has not completed
-
-=item C<use_ipc_run>
-
-Boolean defaults to false. If true forces the use of the L<IPC::Rum>
-implementation
-
-=item C<use_system>
-
-Boolean defaults to false. If true forces the use of the C<system>
-implementation
-
-=item C<working_dir>
-
-A L<File::DataClass::IO> object reference. Defaults to null. If set the child
-will C<chdir> to this directory before executing the external command
-
-=back
-
 =cut
-
-has 'async' => is => 'ro',   isa => Bool, default => FALSE;
-
-has 'close_all_files' => is => 'ro',   isa => Bool, default => FALSE;
-
-has 'cmd' => is => 'ro', isa => ArrayRef | Str, required => TRUE;
-
-has 'detach' => is => 'ro', isa => Bool, default => FALSE;
-
-has 'err' => is => 'ro', isa => Path | SimpleStr, default => NUL;
-
-has 'expected_rv' => is => 'ro', isa => PositiveInt, default => 0;
-
-has 'ignore_zombies' =>
-   is      => 'lazy',
-   isa     => Bool,
-   builder => sub {
-      return ($_[ 0 ]->async || $_[ 0 ]->detach) ? TRUE : FALSE;
-   };
-
-has 'in' =>
-   is      => 'ro',
-   isa     => Path | SimpleStr,
-   coerce  => sub {
-      return (is_arrayref $_[0]) ? join $RS, @{$_[0]} : $_[0];
-   },
-   default => NUL;
-
-has 'log' => is => 'ro', isa => Logger, required => TRUE;
-
-has 'keep_fhs' =>
-   is      => 'lazy',
-   isa     => ArrayRef,
-   builder => sub {
-      return $_[0]->log->can('filehandle') ? [ $_[0]->log->filehandle ] : [];
-   };
-
-has 'max_pidfile_wait' => is => 'ro', isa => PositiveInt, default => 15;
-
-has 'nap_time' => is => 'ro', isa => Num, default => 0.3;
-
-has 'out' => is => 'ro', isa => Path | SimpleStr, default => NUL;
-
-has 'partition_cmd' => is => 'ro', isa => Bool, default => TRUE;
 
 has 'pidfile' =>
    is      => 'lazy',
@@ -262,17 +258,37 @@ has 'pidfile' =>
    coerce  => TRUE,
    builder => sub { $_[0]->rundir->tempfile };
 
+=item C<response_class>
+
+Lazy loadable class defaults to L<Class::Usul::Cmd::IPC::Response>
+
+=cut
+
 has 'response_class' =>
    is      => 'lazy',
    isa     => LoadableClass,
    coerce  => TRUE,
    default => 'Class::Usul::Cmd::IPC::Response';
 
+=item C<rundir>
+
+A L<File::DataClass::IO> object reference. Defaults to the C<tempdir>
+attribute. Directory in which the PID files a stored
+
+=cut
+
 has 'rundir' =>
    is      => 'lazy',
    isa     => Directory,
    coerce  => TRUE,
    builder => sub { $_[0]->tempdir };
+
+=item C<tempdir>
+
+A L<File::DataClasS::IO> object reference. Defaults to C<tmpdir> from
+L<File::Spec>. The directory for storing temporary files
+
+=cut
 
 has 'tempdir' =>
    is      => 'lazy',
@@ -281,17 +297,47 @@ has 'tempdir' =>
    coerce  => TRUE,
    handles => { _tempfile => 'tempfile' };
 
+=item C<timeout>
+
+Positive integer defaults to 0. If greater then zero an alarm will be raised
+after this many seconds if the external command has not completed
+
+=cut
+
 has 'timeout' => is => 'ro', isa => PositiveInt, default => 0;
+
+=item C<use_ipc_run>
+
+Boolean defaults to false. If true forces the use of the L<IPC::Rum>
+implementation
+
+=cut
 
 has 'use_ipc_run' => is => 'ro', isa => Bool, default => FALSE;
 
+=item C<use_system>
+
+Boolean defaults to false. If true forces the use of the C<system>
+implementation
+
+=cut
+
 has 'use_system' => is => 'ro', isa => Bool, default => FALSE;
+
+=item C<working_dir>
+
+A L<File::DataClass::IO> object reference. Defaults to null. If set the child
+will C<chdir> to this directory before executing the external command
+
+=cut
 
 has 'working_dir' =>
    is      => 'lazy',
-   isa     => Directory | Undef,
+   isa     => Directory|Undef,
    coerce  => TRUE,
    default => sub { $_[0]->detach ? io rootdir : undef };
+
+=back
 
 =head1 Subroutines/Methods
 
@@ -326,7 +372,7 @@ around 'BUILDARGS' => sub { # Differentiate constructor method signatures
 
 =item C<BUILD>
 
-Set chomp and lock on the C<pidfile>
+Set chomp and lock on the L</pidfile>
 
 =cut
 
@@ -339,7 +385,7 @@ sub BUILD {
 
 =item C<import>
 
-Exports L<run_cmd> as a function into the calling package
+Exports L</run_cmd> as a function into the calling package
 
 =cut
 
@@ -375,7 +421,7 @@ Runs a given external command. If the command argument is an array reference
 the internal C<fork> and C<exec> implementation will be used, if a string is
 passed the L<IPC::Open3> implementation will be use instead
 
-Returns a L<Class::Usul::Cmd::IPC::Response> object reference
+Returns a L<response|Class::Usul::Cmd::IPC::Response> object reference
 
 =cut
 
@@ -410,6 +456,26 @@ sub _detach_process { # And this method came from MooseX::Daemonize
    return;
 }
 
+sub _execute_coderef {
+   my $self = shift;
+   my ($code, @args) = @{$self->cmd};
+   my $rv;
+
+   try {
+      local $SIG{INT} = sub { $self->_shutdown };
+
+      $rv = $code->($self, @args);
+      $rv = $rv << 8 if defined $rv;
+      $self->pidfile->unlink if $self->pidfile->exists;
+   }
+   catch {
+      $rv = $_->rv if blessed $_ and $_->can('rv');
+      emit_to \*STDERR, $_;
+   };
+
+   _exit $rv // OK;
+}
+
 sub _ipc_run_harness {
    my ($self, $cmd_ref, @cmd_args) = @_;
 
@@ -440,8 +506,9 @@ sub _new_async_response {
    my ($self, $pid) = @_;
 
    my $prog = basename($self->cmd->[0]);
+   my $out  = "Running ${prog}(${pid}) in the background";
 
-   $self->log->debug(my $out = "Running ${prog}(${pid}) in the background");
+   $self->log->debug($out) if $self->has_log;
 
    return $self->response_class->new(out => $out, pid => $pid);
 }
@@ -489,106 +556,40 @@ sub _return_codes_or_throw {
    my $sig  = $e_num & 127;
 
    if ($rv > $self->expected_rv) {
-      $self->log->debug(my $error = "${e_str} rv ${rv}");
+      my $error = "${e_str} rv ${rv}";
+
+      $self->log->debug($error) if $self->has_log;
+
       throw $error, level => 3, rv => $rv;
    }
 
    return { core => $core, rv => $rv, sig => $sig, };
 }
 
-sub _shutdown {
+sub _run_cmd { # Select one of the implementations
    my $self = shift;
-   my $pidfile = $self->pidfile;
+   my $has_meta = _has_shell_meta(my $cmd = $self->cmd);
 
-   $self->pidfile->unlink if $pidfile->exists and $pidfile->getline == $PID;
+   if (is_arrayref $cmd) {
+      throw Unspecified, ['command'] unless $cmd->[0];
 
-   _exit OK;
-}
-
-sub _wait_for_pidfile_and_read {
-   my $self    = shift;
-   my $pidfile = $self->pidfile;
-   my $waited  = 0;
-
-   while (!$pidfile->exists || $pidfile->is_empty) {
-      nap $self->nap_time;
-      $waited += $self->nap_time;
-      throw 'File [_1] contains no process id', [$pidfile]
-         if $waited > $self->max_pidfile_wait;
-   }
-
-   my $pid = $pidfile->chomp->getline || UNDEFINED_RV;
-
-   $pidfile->close;
-
-   return $pid;
-}
-
-sub _execute_coderef {
-   my $self = shift;
-   my ($code, @args) = @{$self->cmd};
-   my $rv;
-
-   try {
-      local $SIG{INT} = sub { $self->_shutdown };
-
-      $rv = $code->($self, @args);
-      $rv = $rv << 8 if defined $rv;
-      $self->pidfile->unlink if $self->pidfile->exists;
-   }
-   catch {
-      $rv = $_->rv if blessed $_ and $_->can('rv');
-      emit_to \*STDERR, $_;
-   };
-
-   _exit $rv // OK;
-}
-
-sub _wait_for_child {
-   my ($self, $pid, $pipes) = @_;
-
-   my ($filtered, $stderr, $stdout) = (NUL, NUL, NUL);
-
-   my $in_fh    = $pipes->[0]->[1];
-   my $out_fh   = $pipes->[1]->[0];
-   my $err_fh   = $pipes->[2]->[0];
-   my $stat_fh  = $pipes->[3]->[0];
-   my $err_hand = _err_handler($self->err, \$filtered, \$stderr);
-   my $out_hand = _out_handler($self->out, \$filtered, \$stdout);
-   my $prog     = basename(my $cmd = $self->cmd->[0]);
-
-   try {
-      if (my $tmout = $self->timeout) {
-         local $SIG{ALRM} = sub { throw TimeOut, [ $prog, $tmout ] };
-         alarm $tmout;
+      if ((is_win32 || $has_meta || $self->use_ipc_run)
+          && can_load( modules => { 'IPC::Run' => '0.84' } )) {
+         return $self->_run_cmd_using_ipc_run;
       }
 
-      my $error = _recv_exec_failure($stat_fh);
+      unless (is_win32 || $has_meta || $self->use_system) {
+         return $self->_run_cmd_using_fork_and_exec;
+      }
 
-      throw $error if $error;
-
-      _send_in($in_fh, $self->in);
-      close $in_fh;
-      _drain($out_fh, $out_hand, $err_fh, $err_hand);
-      waitpid $pid, 0;
-      alarm 0;
+      $cmd = _quoted_join(@{$cmd});
    }
-   catch {
-      alarm 0;
-      throw $_;
-   };
 
-   my $e_num = $CHILD_PID > 0 ? $CHILD_ENUM : $CHILD_ERROR;
-   my $codes = $self->_return_codes_or_throw($cmd, $e_num, $stderr);
+   if (!is_win32 && ($has_meta || $self->async || $self->use_system)) {
+      return $self->_run_cmd_using_system($cmd);
+   }
 
-   return $self->response_class->new(
-      core   => $codes->{core},
-      out    => _filter_out($filtered),
-      rv     => $codes->{rv},
-      sig    => $codes->{sig},
-      stderr => $stderr,
-      stdout => $stdout,
-   );
+   return $self->_run_cmd_using_open3($cmd);
 }
 
 sub _run_cmd_using_fork_and_exec {
@@ -596,7 +597,8 @@ sub _run_cmd_using_fork_and_exec {
    my $pipes   = _four_nonblocking_pipe_pairs();
    my $cmd_str = _quoted_join(@{$self->cmd});
 
-   $self->log->debug("Running ${cmd_str} using fork and exec");
+   $self->log->debug("Running ${cmd_str} using fork and exec")
+      if $self->has_log;
 
    {
       local ($CHILD_ENUM, $CHILD_PID) = (0, 0);
@@ -659,7 +661,7 @@ sub _run_cmd_using_ipc_run {
    my $cmd_str = _quoted_join(@{$self->cmd}, @cmd_args);
 
    $cmd_str .= ' &' if $self->async;
-   $self->log->debug("Running ${cmd_str} using ipc run");
+   $self->log->debug("Running ${cmd_str} using ipc run") if $self->has_log;
 
    try {
       if (my $tmout = $self->timeout) {
@@ -719,7 +721,7 @@ sub _run_cmd_using_ipc_run {
 
    if ($rv > $self->expected_rv) {
       $error = $error ? "${error} rv ${rv}" : "Unknown error rv ${rv}";
-      $self->log->debug($error);
+      $self->log->debug($error) if $self->has_log;
       throw $error, out => $out, rv => $rv;
    }
 
@@ -741,7 +743,7 @@ sub _run_cmd_using_open3 { # Robbed in part from IPC::Cmd
    my $err_hand = _err_handler($self->err, \$filtered, \$stderr);
    my $out_hand = _out_handler($self->out, \$filtered, \$stdout);
 
-   $self->log->debug("Running ${cmd} using open3");
+   $self->log->debug("Running ${cmd} using open3") if $self->has_log;
 
    my $e_num;
 
@@ -815,7 +817,7 @@ sub _run_cmd_using_system {
                                   : $err ne 'out'  ? " 2>${err}"  : ' 2>&1';
 
    $cmd .= ' & echo $! 1>' . $self->pidfile->pathname if $self->async;
-   $self->log->debug("Running ${cmd} using system");
+   $self->log->debug("Running ${cmd} using system") if $self->has_log;
 
    {
       local ($CHILD_ENUM, $CHILD_PID) = (0, 0);
@@ -840,7 +842,7 @@ sub _run_cmd_using_system {
 
       $self->log->debug(
          "System rv ${rv} child pid ${CHILD_PID} error ${CHILD_ENUM}"
-      );
+      ) if $self->has_log;
       # On some systems the child handler reaps the child process so the system
       # call returns -1 and sets $OS_ERROR to 'No child processes'. This line
       # and the child handler code fix the problem
@@ -890,7 +892,7 @@ sub _run_cmd_using_system {
 
    if ($rv > $self->expected_rv) {
       $error = $error ? "${error} rv ${rv}" : "Unknown error rv ${rv}";
-      $self->log->debug($error);
+      $self->log->debug($error) if $self->has_log;
       throw $error, out => $out, rv => $rv;
    }
 
@@ -904,32 +906,80 @@ sub _run_cmd_using_system {
    );
 }
 
-sub _run_cmd { # Select one of the implementations
+sub _shutdown {
    my $self = shift;
-   my $has_meta = _has_shell_meta(my $cmd = $self->cmd);
+   my $pidfile = $self->pidfile;
 
-   if (is_arrayref $cmd) {
-      throw Unspecified, ['command'] unless $cmd->[0];
+   $self->pidfile->unlink if $pidfile->exists and $pidfile->getline == $PID;
 
-      if ((is_win32 || $has_meta || $self->use_ipc_run)
-          && can_load( modules => { 'IPC::Run' => '0.84' } )) {
-         return $self->_run_cmd_using_ipc_run;
-      }
-
-      unless (is_win32 || $has_meta || $self->use_system) {
-         return $self->_run_cmd_using_fork_and_exec;
-      }
-
-      $cmd = _quoted_join(@{$cmd});
-   }
-
-   if (!is_win32 && ($has_meta || $self->async || $self->use_system)) {
-      return $self->_run_cmd_using_system($cmd);
-   }
-
-   return $self->_run_cmd_using_open3($cmd);
+   _exit OK;
 }
 
+sub _wait_for_child {
+   my ($self, $pid, $pipes) = @_;
+
+   my ($filtered, $stderr, $stdout) = (NUL, NUL, NUL);
+
+   my $in_fh    = $pipes->[0]->[1];
+   my $out_fh   = $pipes->[1]->[0];
+   my $err_fh   = $pipes->[2]->[0];
+   my $stat_fh  = $pipes->[3]->[0];
+   my $err_hand = _err_handler($self->err, \$filtered, \$stderr);
+   my $out_hand = _out_handler($self->out, \$filtered, \$stdout);
+   my $prog     = basename(my $cmd = $self->cmd->[0]);
+
+   try {
+      if (my $tmout = $self->timeout) {
+         local $SIG{ALRM} = sub { throw TimeOut, [$prog, $tmout] };
+         alarm $tmout;
+      }
+
+      my $error = _recv_exec_failure($stat_fh);
+
+      throw $error if $error;
+
+      _send_in($in_fh, $self->in);
+      close $in_fh;
+      _drain($out_fh, $out_hand, $err_fh, $err_hand);
+      waitpid $pid, 0;
+      alarm 0;
+   }
+   catch {
+      alarm 0;
+      throw $_;
+   };
+
+   my $e_num = $CHILD_PID > 0 ? $CHILD_ENUM : $CHILD_ERROR;
+   my $codes = $self->_return_codes_or_throw($cmd, $e_num, $stderr);
+
+   return $self->response_class->new(
+      core   => $codes->{core},
+      out    => _filter_out($filtered),
+      rv     => $codes->{rv},
+      sig    => $codes->{sig},
+      stderr => $stderr,
+      stdout => $stdout,
+   );
+}
+
+sub _wait_for_pidfile_and_read {
+   my $self    = shift;
+   my $pidfile = $self->pidfile;
+   my $waited  = 0;
+
+   while (!$pidfile->exists || $pidfile->is_empty) {
+      nap $self->nap_time;
+      $waited += $self->nap_time;
+      throw 'File [_1] contains no process id', [$pidfile]
+         if $waited > $self->max_pidfile_wait;
+   }
+
+   my $pid = $pidfile->chomp->getline || UNDEFINED_RV;
+
+   $pidfile->close;
+
+   return $pid;
+}
 
 # Private functions
 sub _child_handler {
@@ -1180,8 +1230,6 @@ the C<run_cmd> method to log at the debug level
 
 =over 3
 
-=item L<Class::Null>
-
 =item L<File::DataClass>
 
 =item L<Module::Load::Conditional>
@@ -1203,7 +1251,7 @@ There are no known incompatibilities in this module
 =head1 Bugs and Limitations
 
 There are no known bugs in this module. Please report problems to
-http://rt.cpan.org/NoAuth/Bugs.html?Dist=Class-Usul.
+http://rt.cpan.org/NoAuth/Bugs.html?Dist=Class-Usul-Cmd.
 Patches are welcome
 
 =head1 Acknowledgements

@@ -33,6 +33,7 @@ on 'build' => sub {
 };
 
 on 'test' => sub {
+  requires "Capture::Tiny" => "0.22";
   requires "File::Spec" => "0";
   requires "Module::Build" => "0.4004";
   requires "Module::Metadata" => "0";

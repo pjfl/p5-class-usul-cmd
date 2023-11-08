@@ -1,12 +1,11 @@
 package Class::Usul::Cmd;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 2 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 3 $ =~ /\d+/gmx );
 
 use Class::Usul::Cmd::Constants qw( TRUE );
 use Class::Usul::Cmd::Types     qw( ConfigProvider Localiser Logger );
 use Class::Usul::Cmd::Util      qw( merge_attributes );
-use Class::Null;
 use Moo;
 use Class::Usul::Cmd::Options;
 
@@ -64,7 +63,7 @@ has 'config' => is => 'ro', isa => ConfigProvider, required => TRUE;
 
 =item C<l10n>
 
-An optional object reference which is used to localise text messages.  See the
+An optional object reference used to localise text messages.  See the
 L<localiser|Class::Usul::Cmd::Types/Localiser> type
 
 =cut
@@ -73,12 +72,12 @@ has 'l10n' => is => 'ro', isa => Localiser, predicate => 'has_l10n';
 
 =item C<log>
 
-An object reference which defaults to L<Class::Null>. See the
+An optional object reference used to log text messages. See the
 L<logger|Class::Usul::Cmd::Types/Logger> type
 
 =cut
 
-has 'log' => is => 'ro', isa => Logger, default => sub { Class::Null->new };
+has 'log' => is => 'ro', isa => Logger, predicate => 'has_log';
 
 with 'Class::Usul::Cmd::Trait::IPC';
 with 'Class::Usul::Cmd::Trait::OutputLogging';
@@ -104,10 +103,10 @@ are used to instantiate the attributes of the same name in this class
 around 'BUILDARGS' => sub {
    my ($orig, $self, @args) = @_;
 
-   my $attr = $orig->($self, @args);
-   my $builder = $attr->{builder} or return $attr;
+   my $attr    = $orig->($self, @args);
+   my $builder = $attr->{builder};
 
-   merge_attributes $attr, $builder, [qw(config l10n log)];
+   merge_attributes $attr, $builder, [qw(config l10n log)] if $builder;
 
    return $attr;
 };
@@ -119,6 +118,10 @@ use namespace::autoclean;
 __END__
 
 =item C<has_l10n>
+
+Predicate
+
+=item C<has_log>
 
 Predicate
 

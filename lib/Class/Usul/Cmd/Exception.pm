@@ -10,7 +10,7 @@ with    q(Unexpected::TraitFor::ExceptionClasses);
 
 my $class = __PACKAGE__;
 
-$class->ignore_class('Class::Usul::Cmd::IPC', 'Sub::Quote');
+$class->ignore_class('Class::Usul::Cmd::IPC::Runtime', 'Sub::Quote');
 
 =pod
 
@@ -114,6 +114,7 @@ Defines the following list of exceptions;
 =item C<Class::Usul::Cmd::Exception>
 
 Parent for the other exceptions defined here
+
 =cut
 
 has_exception $class;

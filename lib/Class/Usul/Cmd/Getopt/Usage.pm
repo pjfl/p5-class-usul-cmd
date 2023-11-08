@@ -77,10 +77,10 @@ sub option_text {
          $desc .= " (default value: ${default})";
       }
 
-      my @desc  = _split_description($length, $desc);
+      my @desc = _split_description($length, $desc);
 
-      $spec     = _assemble_spec($length, $spec);
-      $string  .= sprintf "${tab}${spec}  %s\n", shift @desc;
+      $spec    = _assemble_spec($length, $spec);
+      $string .= sprintf "${tab}${spec}  %s\n", shift @desc;
 
       for my $line (@desc) {
          $string .= $tab . ($SPC x ($length + 2)) . "${line}\n";

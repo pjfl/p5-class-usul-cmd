@@ -31,11 +31,13 @@ use Data::Printer alias => '_data_dumper', colored => TRUE, indent => 3,
       'Type::Tiny::Union'   => sub { $_[0]->display_name },
    }];
 
-our @EXPORT_OK = qw( abs_path arg_list dash2under data_dumper delete_tmp_files
-   elapsed emit emit_err emit_to ensure_class_loaded exception find_source
-   get_user is_member is_win32 list_attr_of loginid logname merge_attributes
-   nap nonblocking_write_pipe_pair ns_environment pad strip_leader tempdir
-   tempfile throw time2str untaint_cmdline untaint_identifier );
+our @EXPORT_OK = qw( abs_path app_prefix arg_list classfile dash2under
+   data_dumper delete_tmp_files elapsed emit emit_err emit_to
+   ensure_class_loaded env_prefix exception find_source get_user is_member
+   is_win32 list_attr_of loginid logname merge_attributes nap
+   nonblocking_write_pipe_pair ns_environment pad squeeze strip_leader tempdir
+   tempfile throw time2str trim untaint_cmdline untaint_identifier untaint_path
+   );
 
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
@@ -59,21 +61,6 @@ Provides importable utility functions
 
 =over 3
 
-=item C<app_prefix>
-
-   $prefix = app_prefix $classname;
-
-Takes a class name and returns it lower cased with B<::> changed to
-B<_>, e.g. C<App::Munchies> becomes C<app_munchies>
-
-=cut
-
-sub app_prefix ($) {
-   (my $v = lc ($_[0] // NUL)) =~ s{ :: }{_}gmx;
-
-   return $v;
-}
-
 =item C<abs_path>
 
    $absolute_untainted_path = abs_path $some_path;
@@ -93,6 +80,21 @@ sub abs_path ($) {
    $v = Cwd::abs_path(untaint_path($v));
 
    $v =~ s{ / }{\\}gmx if is_win32() and defined $v; # More hate
+
+   return $v;
+}
+
+=item C<app_prefix>
+
+   $prefix = app_prefix $classname;
+
+Takes a class name and returns it lower cased with B<::> changed to
+B<_>, e.g. C<App::Munchies> becomes C<app_munchies>
+
+=cut
+
+sub app_prefix ($) {
+   (my $v = lc ($_[0] // NUL)) =~ s{ :: }{_}gmx;
 
    return $v;
 }
@@ -251,8 +253,7 @@ sub ensure_class_loaded ($;$) {
    $opts //= {};
    return TRUE if !$opts->{ignore_loaded} && is_class_loaded($class);
 
-   eval { require_module($class) };
-   throw_on_error({ level => 3 });
+   eval { require_module($class) }; throw_on_error({ level => 3 });
 
    throw('Class [_1] loaded but package undefined', [$class], level => 2)
       unless is_class_loaded($class);
@@ -358,7 +359,7 @@ Returns true if L</is_win32> is true or the C<$OSNAME> is C<cygwin>
 
 =cut
 
-sub is_ntfs  () {
+sub is_ntfs () {
    return is_win32() || lc $OSNAME eq 'cygwin' ? TRUE : FALSE;
 }
 
@@ -477,7 +478,7 @@ sub nap ($) {
 
 =item C<nonblocking_write_pipe_pair>
 
-   $array_ref = non_blocking_write_pipe;
+   $array_ref = nonblocking_write_pipe;
 
 Returns a pair of file handles, read then write. The write file handle is
 non blocking, binmode is set on both
@@ -540,8 +541,8 @@ sub pad ($$;$$) {
 
    return $pad . $v if $direction eq 'left';
 
-   return (substr $pad, 0, int((length $pad) / 2)).$v
-         .(substr $pad, 0, int(0.99999999 + (length $pad) / 2));
+   return (substr $pad, 0, int((length $pad) / 2)) . $v
+        . (substr $pad, 0, int(0.99999999 + (length $pad) / 2));
 }
 
 =item C<squeeze>
