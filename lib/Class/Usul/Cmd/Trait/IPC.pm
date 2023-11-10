@@ -1,7 +1,7 @@
 package Class::Usul::Cmd::Trait::IPC;
 
 use Class::Usul::Cmd::Constants qw( EXCEPTION_CLASS FALSE TRUE );
-use Class::Usul::Cmd::Types     qw( LoadableClass );
+use Class::Usul::Cmd::Types     qw( LoadableClass ProcessComms );
 use Class::Usul::Cmd::Util      qw( arg_list throw );
 use Unexpected::Functions       qw( Unspecified );
 use Moo::Role;
@@ -29,7 +29,7 @@ Runs external commands
 
 =head1 Configuration and Environment
 
-Defines no attributes
+Defines no public attributes
 
 =cut
 

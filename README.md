@@ -40,15 +40,14 @@ Defines the following attributes;
     A required object reference used to provide configuration attributes. See
     the [config provider](https://metacpan.org/pod/Class%3A%3AUsul%3A%3ACmd%3A%3ATypes#ConfigProvider) type
 
-- `l10n`
-
-    An optional object reference used to localise text messages.  See the
-    [localiser](https://metacpan.org/pod/Class%3A%3AUsul%3A%3ACmd%3A%3ATypes#Localiser) type
-
 - `log`
 
     An optional object reference used to log text messages. See the
     [logger](https://metacpan.org/pod/Class%3A%3AUsul%3A%3ACmd%3A%3ATypes#Logger) type
+
+- `has_log`
+
+    Predicate
 
 # Subroutines/Methods
 
@@ -57,14 +56,6 @@ Defines the following attributes;
     If the constructor is called with a `builder` attribute (either an object
     reference or a hash reference) it's `config`, `l10n`, and `log` attributes
     are used to instantiate the attributes of the same name in this class
-
-- `has_l10n`
-
-    Predicate
-
-- `has_log`
-
-    Predicate
 
 # Diagnostics
 

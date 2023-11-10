@@ -7,11 +7,10 @@ use English                     qw( -no_match_vars );
 use File::Basename              qw( );
 use Ref::Util                   qw( is_arrayref );
 use Text::Autoformat            qw( autoformat );
-use Unexpected::Functions       qw( inflate_placeholders );
 use Moo::Role;
 use Class::Usul::Cmd::Options;
 
-requires qw( config l10n log );
+requires qw( config localize log );
 
 =pod
 
@@ -40,7 +39,7 @@ Requires the following;
 
 =item C<config>
 
-=item C<l10n>
+=item C<localize>
 
 =item C<log>
 
@@ -160,7 +159,7 @@ to I<STDERR>
 sub error {
    my ($self, $text, $opts) = @_;
 
-   $text = $self->_loc($text, $opts);
+   $text = $self->_localise($text, $opts);
 
    if ($self->has_log) {
       $self->log->error($_) for (split m{ \n }mx, "${text}");
@@ -188,7 +187,7 @@ sub fatal {
 
    my $posn = ' at ' . abs_path($file) . " line ${line}";
 
-   $text = $self->_loc($text, $opts) . $posn;
+   $text = $self->_localise($text, $opts) . $posn;
 
    if ($self->has_log) {
       $self->log->alert($_) for (split m{ \n }mx, $text);
@@ -213,7 +212,7 @@ sub info {
    my ($self, $text, $opts) = @_;
 
    $opts //= {};
-   $text = $self->_loc($text, $opts, TRUE);
+   $text = $self->_localise($text, $opts, TRUE);
 
    if ($self->has_log) {
       $self->log->info($_) for (split m{ \n }mx, $text);
@@ -222,46 +221,6 @@ sub info {
    emit $self->add_leader($text, $opts) unless $self->quiet or $opts->{quiet};
 
    return TRUE;
-}
-
-=item C<localize>
-
-   $localized_text = $self->localize( $message, \%opts );
-
-Localises the message. Calls the L<localiser|Class::Usul::Cmd/l10n>. The
-domains to search are in the C<l10n_domains> configuration attribute. Adds
-C<< $self->locale >> to the arguments passed to C<localizer>
-
-=cut
-
-sub localize {
-   my ($self, $key, $args) = @_;
-
-   return $self->l10n->localize($key, $args) if $self->has_l10n;
-
-   return $key unless defined $key;
-
-   my $text = "${key}"; chomp $text;
-
-   $args //= {};
-
-   if (defined $args->{params} && is_arrayref $args->{params}) {
-      return $text if 0 > index $text, '[_';
-
-      my $defaults = [ '[?]', '[]', $args->{no_quote_bind_values}];
-      # Expand positional parameters of the form [_<n>]
-      return inflate_placeholders $defaults, $text, @{$args->{params}};
-   }
-
-   return $text if 0 > index $text, '{';
-
-   # Expand named parameters of the form {param_name}
-   my %args = %{$args};
-   my $re   = join '|', map { quotemeta $_ } keys %args;
-
-   $text =~ s{ \{($re)\} }{ defined $args{$1} ? $args{$1} : "{${1}?}" }egmx;
-
-   return $text;
 }
 
 =item C<output>
@@ -277,7 +236,7 @@ sub output {
    my ($self, $text, $opts) = @_;
 
    $opts //= {};
-   $text = $self->_loc($text, $opts, TRUE);
+   $text = $self->_localise($text, $opts, TRUE);
 
    my $code = sub {
       $opts->{to} && $opts->{to} eq 'err' ? emit_err(@_) : emit(@_);
@@ -324,7 +283,7 @@ sub warning {
    my ($self, $text, $opts) = @_;
 
    $opts //= {};
-   $text = $self->_loc($text, $opts);
+   $text = $self->_localise($text, $opts);
 
    if ($self->has_log) {
       $self->log->warn($_) for (split m{ \n }mx, $text);
@@ -336,7 +295,7 @@ sub warning {
 }
 
 # Private methods
-sub _loc {
+sub _localise {
    my ($self, $text, $opts, $quote) = @_;
 
    $opts //= {};

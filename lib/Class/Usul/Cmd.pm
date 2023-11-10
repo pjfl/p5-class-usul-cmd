@@ -1,10 +1,10 @@
 package Class::Usul::Cmd;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 4 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 5 $ =~ /\d+/gmx );
 
 use Class::Usul::Cmd::Constants qw( TRUE );
-use Class::Usul::Cmd::Types     qw( ConfigProvider Localiser Logger );
+use Class::Usul::Cmd::Types     qw( ConfigProvider Logger );
 use Class::Usul::Cmd::Util      qw( merge_attributes );
 use Moo;
 use Class::Usul::Cmd::Options;
@@ -61,25 +61,21 @@ the L<config provider|Class::Usul::Cmd::Types/ConfigProvider> type
 
 has 'config' => is => 'ro', isa => ConfigProvider, required => TRUE;
 
-=item C<l10n>
-
-An optional object reference used to localise text messages.  See the
-L<localiser|Class::Usul::Cmd::Types/Localiser> type
-
-=cut
-
-has 'l10n' => is => 'ro', isa => Localiser, predicate => 'has_l10n';
-
 =item C<log>
 
 An optional object reference used to log text messages. See the
 L<logger|Class::Usul::Cmd::Types/Logger> type
+
+=item C<has_log>
+
+Predicate
 
 =cut
 
 has 'log' => is => 'ro', isa => Logger, predicate => 'has_log';
 
 with 'Class::Usul::Cmd::Trait::IPC';
+with 'Class::Usul::Cmd::Trait::L10N';
 with 'Class::Usul::Cmd::Trait::OutputLogging';
 with 'Class::Usul::Cmd::Trait::Prompting';
 with 'Class::Usul::Cmd::Trait::DebugFlag';
@@ -116,14 +112,6 @@ use namespace::autoclean;
 1;
 
 __END__
-
-=item C<has_l10n>
-
-Predicate
-
-=item C<has_log>
-
-Predicate
 
 =back
 
