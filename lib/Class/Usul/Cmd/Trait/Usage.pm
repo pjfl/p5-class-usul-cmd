@@ -80,7 +80,8 @@ has 'app_version' =>
       } catch { '?' };
 
       return $ver;
-   };
+   },
+   init_arg => undef;
 
 =item C<encoding>
 
@@ -91,8 +92,8 @@ Decode/encode input/output using this encoding
 option 'encoding' =>
    is            => 'lazy',
    isa           => DataEncoding,
+   default       => 'UTF-8',
    documentation => 'Decode/encode input/output using this encoding',
-   default       => 'utf-8',
    format        => 's';
 
 =item C<H help_manual>

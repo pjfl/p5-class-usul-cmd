@@ -60,13 +60,13 @@ to C<en>
 option 'locale' =>
    is            => 'lazy',
    isa           => SimpleStr,
-   format        => 's',
-   documentation => 'Loads the specified language message catalogue',
-   builder       => sub {
+   default       => sub {
       my $self = shift;
 
       return $self->config->can('locale') ? $self->config->locale : 'en';
    },
+   documentation => 'Loads the specified language message catalogue',
+   format        => 's',
    short         => 'L';
 
 =item C<q quiet_flag>
@@ -162,7 +162,8 @@ sub error {
    $text = $self->_localise($text, $opts);
 
    if ($self->has_log) {
-      $self->log->error($_) for (split m{ \n }mx, "${text}");
+      $self->log->error($self->add_leader($_, $opts))
+         for (split m{ \n }mx, "${text}");
    }
 
    emit_err $self->add_leader($text, $opts);
@@ -190,7 +191,8 @@ sub fatal {
    $text = $self->_localise($text, $opts) . $posn;
 
    if ($self->has_log) {
-      $self->log->alert($_) for (split m{ \n }mx, $text);
+      $self->log->alert($self->add_leader($_, $opts))
+         for (split m{ \n }mx, $text);
    }
 
    emit_err $self->add_leader($text, $opts);
@@ -215,7 +217,8 @@ sub info {
    $text = $self->_localise($text, $opts, TRUE);
 
    if ($self->has_log) {
-      $self->log->info($_) for (split m{ \n }mx, $text);
+      $self->log->info($self->add_leader($_, $opts))
+         for (split m{ \n }mx, $text);
    }
 
    emit $self->add_leader($text, $opts) unless $self->quiet or $opts->{quiet};
@@ -286,7 +289,8 @@ sub warning {
    $text = $self->_localise($text, $opts);
 
    if ($self->has_log) {
-      $self->log->warn($_) for (split m{ \n }mx, $text);
+      $self->log->warn($self->add_leader($_, $opts))
+         for (split m{ \n }mx, $text);
    }
 
    emit $self->add_leader($text, $opts) unless $self->quiet || $opts->{quiet};

@@ -51,9 +51,9 @@ The method in the program class to dispatch to
 option 'method' =>
    is            => 'rwp',
    isa           => SimpleStr,
-   format        => 's',
-   documentation => 'Name of the method to call',
    default       => NUL,
+   documentation => 'Name of the method to call',
+   format        => 's',
    order         => 1,
    short         => 'c';
 
@@ -67,10 +67,10 @@ from the C<< $self->options >> hash reference
 option 'options' =>
    is            => 'ro',
    isa           => HashRef,
-   format        => 's%',
+   default       => sub { {} },
    documentation =>
       'Zero, one or more key=value pairs available to the method call',
-   default       => sub { {} },
+   format        => 's%',
    short         => 'o';
 
 =item C<umask>
@@ -82,14 +82,14 @@ An octal number which is used to set the umask by the L</run> method
 option 'umask' =>
    is            => 'rw',
    isa           => OctalNum,
-   format        => 's',
-   documentation => 'Set the umask to this octal number',
+   coerce        => TRUE,
    default       => sub {
       my $self = shift;
 
       return $self->config->can('umask') ? $self->config->umask : '027';
    },
-   coerce        => TRUE,
+   documentation => 'Set the umask to this octal number',
+   format        => 's',
    lazy          => TRUE;
 
 =item C<v verbose>
@@ -101,8 +101,8 @@ Repeatable boolean that increases the verbosity of the output
 option 'verbose' =>
    is            => 'ro',
    isa           => Int,
-   documentation => 'Increase the verbosity of the output',
    default       => 0,
+   documentation => 'Increase the verbosity of the output',
    repeatable    => TRUE,
    short         => 'v';
 

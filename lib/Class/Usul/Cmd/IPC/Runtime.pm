@@ -668,11 +668,9 @@ sub _run_cmd_using_ipc_run {
    $self->log->debug("Running ${cmd_str} using ipc run") if $self->has_log;
 
    try {
-      if (my $tmout = $self->timeout) {
-         local $SIG{ALRM} = sub { throw TimeOut, [$cmd_str, $tmout] };
-         alarm $tmout;
-      }
-
+      my $tmout = $self->timeout;
+      local $SIG{ALRM} = sub { throw TimeOut, [$cmd_str, $tmout] } if $tmout;
+      alarm $tmout;
       ($rv, $h) = _ipc_run_harness($self, $cmd_ref, @cmd_args);
       alarm 0;
    }
@@ -757,10 +755,9 @@ sub _run_cmd_using_open3 { # Robbed in part from IPC::Cmd
       try {
          local $SIG{PIPE} = \&_pipe_handler;
 
-         if (my $tmout = $self->timeout) {
-            local $SIG{ALRM} = sub { throw TimeOut, [$cmd, $tmout] };
-            alarm $tmout;
-         }
+         my $tmout = $self->timeout;
+         local $SIG{ALRM} = sub { throw TimeOut, [$cmd, $tmout] } if $tmout;
+         alarm $tmout;
 
          my ($pid, $in_fh, $out_fh, $err_fh) = _open3($cmd);
 
@@ -829,11 +826,9 @@ sub _run_cmd_using_system {
       try {
          local $SIG{CHLD} = \&_child_handler;
 
-         if (my $tmout = $self->timeout) {
-            local $SIG{ALRM} = sub { throw TimeOut, [$cmd, $tmout] };
-            alarm $tmout;
-         }
-
+         my $tmout = $self->timeout;
+         local $SIG{ALRM} = sub { throw TimeOut, [$cmd, $tmout] } if $tmout;
+         alarm $tmout;
          $rv = system $cmd;
          alarm 0;
       }
@@ -933,10 +928,9 @@ sub _wait_for_child {
    my $prog     = basename(my $cmd = $self->cmd->[0]);
 
    try {
-      if (my $tmout = $self->timeout) {
-         local $SIG{ALRM} = sub { throw TimeOut, [$prog, $tmout] };
-         alarm $tmout;
-      }
+      my $tmout = $self->timeout;
+      local $SIG{ALRM} = sub { throw TimeOut, [$prog, $tmout] } if $tmout;
+      alarm $tmout;
 
       my $error = _recv_exec_failure($stat_fh);
 
@@ -1142,11 +1136,11 @@ sub _pipe_handler {
 }
 
 sub _quote {
-   my $v = shift; return is_win32 ? '"'.$v.'"' : "'${v}'";
+   my $v = shift; return is_win32 ? '"' . $v . '"' : "'${v}'";
 }
 
 sub _quoted_join {
-   return join SPC, map { m{ [ ] }mx ? _quote->($_) : $_ } @_;
+   return join SPC, map { m{ [ ] }mx ? _quote($_) : $_ } @_;
 }
 
 sub _recv_exec_failure {
