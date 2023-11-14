@@ -81,7 +81,7 @@ Larry Wall - For the Perl programming language
 
 # Author
 
-Peter Flanigan, `<lazarus@roxsoft.co.uk>`
+Peter Flanigan, `<pjfl@cpan.org>`
 
 # License and Copyright
 

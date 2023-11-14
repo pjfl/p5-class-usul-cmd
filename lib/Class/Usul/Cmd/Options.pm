@@ -315,7 +315,7 @@ sub _validate_and_filter_options {
    my %cmdline_options = map { ($_ => $options{$_}) }
       grep { exists $options{$_} } @option_attributes, 'required';
 
-   $cmdline_options{repeatable} = TRUE unless $cmdline_options{autosplit};
+   $cmdline_options{repeatable} = TRUE if $cmdline_options{autosplit};
    $cmdline_options{format} .= '@'
       if $cmdline_options{repeatable}
       and defined $cmdline_options{format}

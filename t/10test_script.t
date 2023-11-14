@@ -1,6 +1,7 @@
 #!/usr/bin/env -S perl -I.
 use t::boilerplate;
 
+use File::Spec::Functions qw( devnull );
 use Test::More;
 
 use_ok 'Class::Usul::Cmd';
@@ -44,6 +45,17 @@ ok $obj->can('test_attr'), 'Option is synonym for has';
 
 $obj->unshift_argv('test-method');
 is $obj->select_method, 'test_method', 'Dash 2 underscore on method';
+
+$ENV{PERL_MM_USE_DEFAULT} = 1;
+
+# To avoid open for writing error from logger
+open STDIN, '<', devnull() or die 'Cannot open devnull';
+
+ok !$obj->is_interactive, 'Is not interactive';
+is $obj->anykey, 1, 'Any key';
+is $obj->get_line( undef, 'test' ), 'test', 'Get line';
+is $obj->get_option( undef, 2 ), 1, 'Get option';
+is $obj->yorn( undef, 1 ), 1, 'Yes or no';
 
 done_testing;
 

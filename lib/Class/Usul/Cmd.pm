@@ -1,7 +1,7 @@
 package Class::Usul::Cmd;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 6 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 7 $ =~ /\d+/gmx );
 
 use Class::Usul::Cmd::Constants qw( TRUE );
 use Class::Usul::Cmd::Types     qw( ConfigProvider Logger );
@@ -143,7 +143,7 @@ Larry Wall - For the Perl programming language
 
 =head1 Author
 
-Peter Flanigan, C<< <lazarus@roxsoft.co.uk> >>
+Peter Flanigan, C<< <pjfl@cpan.org> >>
 
 =head1 License and Copyright
 

@@ -1,5 +1,6 @@
 Revision history for Class::Usul::Cmd
 
+          - Added more tests
           - Passes Class::Usul tests
           - Creates L10N trait
           - Fixes missing predicate coverage

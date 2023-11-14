@@ -26,4 +26,6 @@ t/06yaml.t
 t/07podspelling.t
 t/10test_script.t
 t/11util.t
+t/20options.t
+t/27ipc.t
 t/boilerplate.pm
