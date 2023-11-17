@@ -6,10 +6,10 @@ use parent 'Exporter::Tiny';
 use Class::Usul::Cmd::Exception;
 use Ref::Util qw( is_arrayref );
 
-our @EXPORT = qw( BRK DOT DEFAULT_ENCODING DUMP_EXCEPT EXCEPTION_CLASS FAILED
-                  FALSE LOG_LEVELS NO NUL OK QUIT QUOTED_RE SPC TRUE
-                  UNDEFINED_RV UNTAINT_CMDLINE UNTAINT_IDENTIFIER UNTAINT_PATH
-                  WIDTH YES );
+our @EXPORT = qw( AS_PARA AS_PASSWORD BRK DOT COMMA DEFAULT_ENCODING
+                  DUMP_EXCEPT EXCEPTION_CLASS FAILED FALSE LOG_LEVELS NO NUL OK
+                  QUIT QUOTED_RE SPC TRUE UNDEFINED_RV UNTAINT_CMDLINE
+                  UNTAINT_IDENTIFIER UNTAINT_PATH WIDTH YES );
 
 =pod
 
@@ -104,6 +104,26 @@ can be used to set values that are then constant at runtime
 
 =over 3
 
+=item C<AS_PARA>
+
+Returns a hash reference containing the keys and values that causes the auto
+formatting L<output|Class::Usul::Cmd::Trait::OutputLogging/output> subroutine
+to clear left, fill paragraphs, and append an extra newline
+
+=cut
+
+sub AS_PARA () { { cl => 1, fill => 1, nl => 1 } }
+
+=item C<AS_PASSWORD>
+
+Returns a list of arguments for
+L<get_line|Class::Usul::Cmd::Trait::Prompting/get_line> which causes it to
+prompt for a password
+
+=cut
+
+sub AS_PASSWORD () { ( q(), 1, 0, 0, 1 ) }
+
 =item C<BRK>
 
 Separate leader from message with the characters colon space
@@ -111,6 +131,14 @@ Separate leader from message with the characters colon space
 =cut
 
 sub BRK () { ': ' }
+
+=item C<COMMA>
+
+Literal comma character
+
+=cut
+
+sub COMMA () { q(,) }
 
 =item C<DOT>
 

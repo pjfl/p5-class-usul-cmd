@@ -108,7 +108,7 @@ option 'verbose' =>
 
 =back
 
-Defines the following attributes;
+Defines the following public attributes;
 
 =over 3
 
@@ -119,11 +119,10 @@ are flattened and passed to the method call by L</run>
 
 =cut
 
-has '_run_params' =>
+has 'params' =>
    is       => 'lazy',
    isa      => HashRef[ArrayRef],
-   default  => sub { {} },
-   init_arg => 'params';
+   default  => sub { {} };
 
 =item C<name>
 
@@ -160,7 +159,7 @@ Handles the result of calling the command
 sub handle_result {
    my ($self, $method, $rv) = @_;
 
-   my $params      = $self->_run_params->{$method};
+   my $params      = $self->params->{$method};
    my $args        = (defined $params ) ? $params->[0] : undef;
    my $expected_rv = (is_hashref $args) ? $args->{expected_rv} // OK : OK;
 
@@ -221,8 +220,8 @@ sub run {
    my $rv;
 
    if ($method eq 'run_chain' or $self->can_call($method)) {
-      my $params = exists $self->_run_params->{$method}
-         ? $self->_run_params->{$method} : [];
+      my $params = exists $self->params->{$method}
+         ? $self->params->{$method} : [];
 
       try {
          $rv = $self->$method(@{$params});

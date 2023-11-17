@@ -109,7 +109,7 @@ sub _error_for_localiser {
    return _error_for_object_reference($_[0]) unless $_[0] and blessed $_[0];
 
    return inflate_message
-      'Object [_1] is missing the localize method', blessed $_[0];
+      'Object [_1] is missing the "localize" method', blessed $_[0];
 }
 
 sub _error_for_logger {
