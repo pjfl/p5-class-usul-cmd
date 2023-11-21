@@ -1,8 +1,10 @@
-package Class::Usul::Cmd::Trait::L10N;
+package Class::Usul::Cmd::Trait::Base;
 
-use Class::Usul::Cmd::Types qw( Localiser );
-use Ref::Util               qw( is_arrayref );
-use Unexpected::Functions   qw( inflate_placeholders );
+use Class::Usul::Cmd::Constants qw( FALSE TRUE );
+use Class::Usul::Cmd::Types     qw( ConfigProvider Localiser Logger Undef );
+use Class::Usul::Cmd::Util      qw( merge_attributes );
+use Ref::Util                   qw( is_arrayref );
+use Unexpected::Functions       qw( inflate_placeholders );
 use Moo::Role;
 
 =pod
@@ -11,45 +13,76 @@ use Moo::Role;
 
 =head1 Name
 
-Class::Usul::Cmd::Trait::L10N - Localise text strings
+Class::Usul::Cmd::Trait::Base - Command line support framework
 
 =head1 Synopsis
 
    use Moo;
+   use Class::Usul::Cmd::Options;
 
-   with 'Class::Usul::Cmd::Trait::L10N';
-
+   with 'Class::Usul::Cmd::Trait::Base';
 
 =head1 Description
 
-Localise text strings
-
 =head1 Configuration and Environment
 
-Defines the following attributes;
+Defines the following public attributes;
 
 =over 3
+
+=item C<config>
+
+A required object reference used to provide configuration attributes. See
+the L<config provider|Class::Usul::Cmd::Types/ConfigProvider> type
+
+=cut
+
+has 'config' => is => 'ro', isa => ConfigProvider, required => TRUE;
 
 =item C<l10n>
 
 An optional object reference used to localise text messages.  See the
 L<localiser|Class::Usul::Cmd::Types/Localiser> type
 
-=item C<has_l10n>
+=cut
 
-Predicate
+has 'l10n' => is => 'ro', isa => Localiser|Undef;
+
+=item C<log>
+
+An optional object reference used to log text messages. See the
+L<logger|Class::Usul::Cmd::Types/Logger> type
 
 =cut
 
-has 'l10n' => is => 'ro', isa => Localiser, predicate => 'has_l10n';
+has 'log' => is => 'ro', isa => Logger|Undef;
 
 =back
 
 =head1 Subroutines/Methods
 
-Defines the following methods;
+Defines the following public methods;
 
 =over 3
+
+=item C<BUILDARGS>
+
+If the constructor is called with a C<builder> attribute (either an object
+reference or a hash reference) it's C<config>, C<l10n>, and C<log> attributes
+are used to instantiate the attributes of the same name in this role
+
+=cut
+
+around 'BUILDARGS' => sub {
+   my ($orig, $self, @args) = @_;
+
+   my $attr    = $orig->($self, @args);
+   my $builder = $attr->{builder};
+
+   merge_attributes $attr, $builder, [qw(config l10n log)] if $builder;
+
+   return $attr;
+};
 
 =item C<localize>
 
@@ -64,7 +97,7 @@ C<< $self->locale >> to the arguments passed to C<localizer>
 sub localize {
    my ($self, $key, $args) = @_;
 
-   return $self->l10n->localize($key, $args) if $self->has_l10n;
+   return $self->l10n->localize($key, $args) if $self->l10n;
 
    return $key unless defined $key;
 

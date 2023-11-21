@@ -1,7 +1,7 @@
-package Class::Usul::Cmd::Trait::IPC;
+package Class::Usul::Cmd::Trait::RunExternal;
 
-use Class::Usul::Cmd::Constants qw( EXCEPTION_CLASS FALSE TRUE );
-use Class::Usul::Cmd::Types     qw( LoadableClass ProcessComms );
+use Class::Usul::Cmd::Constants qw( EXCEPTION_CLASS );
+use Class::Usul::Cmd::Types     qw( LoadableClass );
 use Class::Usul::Cmd::Util      qw( arg_list throw );
 use Unexpected::Functions       qw( Unspecified );
 use Moo::Role;
@@ -14,14 +14,14 @@ requires qw( config log );
 
 =head1 Name
 
-Class::Usul::Cmd::Trait::IPC - Run external commands
+Class::Usul::Cmd::Trait::RunExternal - Run external commands
 
 =head1 Synopsis
 
    use Moo;
 
    extends 'Class::Usul::Cmd';
-   with    'Class::Usul::Cmd::Trait::IPC';
+   with    'Class::Usul::Cmd::Trait::RunExternal';
 
 =head1 Description
 
@@ -31,6 +31,8 @@ Runs external commands
 
 Defines no public attributes
 
+=over 3
+
 =cut
 
 # Private attributes
@@ -38,6 +40,8 @@ has '_ipc_runtime_class' =>
    is      => 'lazy',
    isa     => LoadableClass,
    default => 'Class::Usul::Cmd::IPC::Runtime';
+
+=back
 
 =head1 Subroutines/Methods
 
@@ -65,7 +69,7 @@ sub run_cmd {
    my $config = $self->config;
 
    $attr->{cmd}       = $cmd or throw Unspecified, ['command'];
-   $attr->{log}     //= $self->log if $self->has_log;
+   $attr->{log}     //= $self->log if $self->log;
    $attr->{rundir}  //= $config->rundir if $config->can('rundir');
    $attr->{tempdir} //= $config->tempdir if $config->can('tempdir');
 

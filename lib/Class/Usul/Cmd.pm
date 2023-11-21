@@ -1,13 +1,24 @@
 package Class::Usul::Cmd;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 8 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 9 $ =~ /\d+/gmx );
 
-use Class::Usul::Cmd::Constants qw( TRUE );
-use Class::Usul::Cmd::Types     qw( ConfigProvider Logger );
-use Class::Usul::Cmd::Util      qw( merge_attributes );
 use Moo;
 use Class::Usul::Cmd::Options;
+
+with 'Class::Usul::Cmd::Trait::Base';
+with 'Class::Usul::Cmd::Trait::RunExternal';
+with 'Class::Usul::Cmd::Trait::OutputLogging';
+with 'Class::Usul::Cmd::Trait::Prompting';
+with 'Class::Usul::Cmd::Trait::DebugFlag';
+with 'Class::Usul::Cmd::Trait::Usage';
+with 'Class::Usul::Cmd::Trait::RunningMethods';
+
+use namespace::autoclean;
+
+1;
+
+__END__
 
 =pod
 
@@ -48,72 +59,11 @@ Command line support framework
 
 =head1 Configuration and Environment
 
-Defines the following attributes;
-
-=over 3
-
-=item C<config>
-
-A required object reference used to provide configuration attributes. See
-the L<config provider|Class::Usul::Cmd::Types/ConfigProvider> type
-
-=cut
-
-has 'config' => is => 'ro', isa => ConfigProvider, required => TRUE;
-
-=item C<log>
-
-An optional object reference used to log text messages. See the
-L<logger|Class::Usul::Cmd::Types/Logger> type
-
-=item C<has_log>
-
-Predicate
-
-=cut
-
-has 'log' => is => 'ro', isa => Logger, predicate => 'has_log';
-
-with 'Class::Usul::Cmd::Trait::IPC';
-with 'Class::Usul::Cmd::Trait::L10N';
-with 'Class::Usul::Cmd::Trait::OutputLogging';
-with 'Class::Usul::Cmd::Trait::Prompting';
-with 'Class::Usul::Cmd::Trait::DebugFlag';
-with 'Class::Usul::Cmd::Trait::Usage';
-with 'Class::Usul::Cmd::Trait::RunningMethods';
-
-=back
+Defines no public attributes
 
 =head1 Subroutines/Methods
 
-=over 3
-
-=item C<BUILDARGS>
-
-If the constructor is called with a C<builder> attribute (either an object
-reference or a hash reference) it's C<config>, C<l10n>, and C<log> attributes
-are used to instantiate the attributes of the same name in this class
-
-=cut
-
-around 'BUILDARGS' => sub {
-   my ($orig, $self, @args) = @_;
-
-   my $attr    = $orig->($self, @args);
-   my $builder = $attr->{builder};
-
-   merge_attributes $attr, $builder, [qw(config l10n log)] if $builder;
-
-   return $attr;
-};
-
-use namespace::autoclean;
-
-1;
-
-__END__
-
-=back
+Defines no public methods
 
 =head1 Diagnostics
 
@@ -124,6 +74,8 @@ None
 =over 3
 
 =item L<Moo>
+
+=item L<Class::Usul::Cmd::Options>
 
 =back
 

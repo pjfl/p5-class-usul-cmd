@@ -152,8 +152,11 @@ has '_doc_title' =>
    isa     => Str,
    default => sub {
       my $self = shift;
+      my $config = $self->config;
 
-      return $self->config->doc_title if $self->config->can('doc_title');
+      return $config->doc_title if $config->can('doc_title');
+
+      return $config->name if $config->can('name');
 
       return 'User Documentation';
    };

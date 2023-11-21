@@ -112,7 +112,7 @@ parameters
 
 sub arg_list (;@) {
    return $_[0] && is_hashref $_[0] ? { %{$_[0]} }
-        : $_[0]                     ? { @_ }
+        : defined $_[0]             ? { @_ }
                                     : {};
 }
 
@@ -502,14 +502,24 @@ sub nonblocking_write_pipe_pair () {
 
 =item C<now_dt>
 
-   $date_time = now_dt;
+   $date_time = now_dt [$zone], [$locale];
 
-Returns a L<DateTime> object instantiated with the current time
+Returns a L<DateTime> object instantiated with the current time. Defaults to
+C<UTC> and C<en_GB>
 
 =cut
 
-sub now_dt () {
-   return str2date_time(time2str());
+sub now_dt (;$$) {
+   my ($zone, $locale) = @_;
+
+   my $args = { locale => 'en_GB', time_zone => 'UTC' };
+
+   $args->{locale}    = $locale if $locale;
+   $args->{time_zone} = $zone   if $zone;
+
+   _maybe_load_datetime();
+
+   return DateTime->now(%{$args});
 }
 
 
@@ -582,8 +592,6 @@ optional
 
 =cut
 
-my $datetime_loaded;
-
 sub str2date_time ($;$) {
    my ($dstr, $zone) = @_;
 
@@ -591,11 +599,7 @@ sub str2date_time ($;$) {
 
    throw(DateTimeCoercion, [$dstr]) unless defined $time;
 
-   unless ($datetime_loaded) {
-      ensure_class_loaded 'DateTime';
-      ensure_class_loaded 'DateTime::Format::Epoch';
-      $datetime_loaded = TRUE;
-   }
+   _maybe_load_datetime();
 
    my $dt        = DateTime->new( year => 1970, month => 1, day => 1, );
    my $formatter = DateTime::Format::Epoch->new(
@@ -1029,6 +1033,17 @@ sub _get_pod_content_for_attr {
    $pod = squeeze($pod);
    $pod = $1 if $pod =~ m{ \A (.+) \z }msx;
    return $pod;
+}
+
+my $datetime_loaded;
+
+sub _maybe_load_datetime {
+   return if $datetime_loaded;
+
+   ensure_class_loaded 'DateTime';
+   ensure_class_loaded 'DateTime::Format::Epoch';
+   $datetime_loaded = TRUE;
+   return;
 }
 
 1;

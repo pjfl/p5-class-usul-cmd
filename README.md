@@ -33,29 +33,11 @@ Command line support framework
 
 # Configuration and Environment
 
-Defines the following attributes;
-
-- `config`
-
-    A required object reference used to provide configuration attributes. See
-    the [config provider](https://metacpan.org/pod/Class%3A%3AUsul%3A%3ACmd%3A%3ATypes#ConfigProvider) type
-
-- `log`
-
-    An optional object reference used to log text messages. See the
-    [logger](https://metacpan.org/pod/Class%3A%3AUsul%3A%3ACmd%3A%3ATypes#Logger) type
-
-- `has_log`
-
-    Predicate
+Defines no public attributes
 
 # Subroutines/Methods
 
-- `BUILDARGS`
-
-    If the constructor is called with a `builder` attribute (either an object
-    reference or a hash reference) it's `config`, `l10n`, and `log` attributes
-    are used to instantiate the attributes of the same name in this class
+Defines no public methods
 
 # Diagnostics
 
@@ -64,6 +46,7 @@ None
 # Dependencies
 
 - [Moo](https://metacpan.org/pod/Moo)
+- [Class::Usul::Cmd::Options](https://metacpan.org/pod/Class%3A%3AUsul%3A%3ACmd%3A%3AOptions)
 
 # Incompatibilities
 

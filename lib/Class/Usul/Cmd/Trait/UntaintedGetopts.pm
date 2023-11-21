@@ -71,12 +71,19 @@ sub _parse_options {
    my (%gld_conf, $opt);
 
    @gld_conf{@gld_attr} = @config{@gld_attr};
+
    _set_usage_conf($config{usage_conf}) if $config{usage_conf};
+
    local @ARGV = @ARGV if $config{protect_argv};
+
    @ARGV = map { decode($enc, $_) } @ARGV if $enc;
+
    @ARGV = map { untaint_cmdline $_ } @ARGV unless $config{no_untaint};
+
    $Untainted_Argv = [@ARGV];
+
    @ARGV = _split_args($splitters) if keys %{$splitters};
+
    ($opt, $Usage) = describe_options($usage_opt, @options, \%gld_conf);
    $Extra_Argv = [@ARGV];
 

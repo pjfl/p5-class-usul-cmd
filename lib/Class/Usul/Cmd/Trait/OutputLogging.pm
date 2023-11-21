@@ -161,7 +161,7 @@ sub error {
 
    $text = $self->_localise($text, $opts);
 
-   if ($self->has_log) {
+   if ($self->log) {
       $self->log->error($self->add_leader($_, $opts))
          for (split m{ \n }mx, "${text}");
    }
@@ -190,7 +190,7 @@ sub fatal {
 
    $text = $self->_localise($text, $opts) . $posn;
 
-   if ($self->has_log) {
+   if ($self->log) {
       $self->log->alert($self->add_leader($_, $opts))
          for (split m{ \n }mx, $text);
    }
@@ -216,7 +216,7 @@ sub info {
    $opts //= {};
    $text = $self->_localise($text, $opts, TRUE);
 
-   if ($self->has_log) {
+   if ($self->log) {
       $self->log->info($self->add_leader($_, $opts))
          for (split m{ \n }mx, $text);
    }
@@ -288,7 +288,7 @@ sub warning {
    $opts //= {};
    $text = $self->_localise($text, $opts);
 
-   if ($self->has_log) {
+   if ($self->log) {
       $self->log->warn($self->add_leader($_, $opts))
          for (split m{ \n }mx, $text);
    }
