@@ -1,12 +1,12 @@
 package Class::Usul::Cmd::Trait::RunningMethods;
 
-use Class::Usul::Cmd::Constants qw( DOT FAILED NUL OK TRUE UNDEFINED_RV );
+use Class::Usul::Cmd::Constants qw( FAILED NUL OK TRUE UNDEFINED_RV );
 use Class::Usul::Cmd::Types     qw( ArrayRef HashRef Int SimpleStr );
+use File::DataClass::Types      qw( OctalNum );
 use Class::Usul::Cmd::Util      qw( dash2under delete_tmp_files elapsed emit_to
                                     exception is_member logname throw
                                     untaint_identifier );
 use English                     qw( -no_match_vars );
-use File::DataClass::Types      qw( OctalNum );
 use Ref::Util                   qw( is_hashref );
 use Scalar::Util                qw( blessed );
 use Try::Tiny;
@@ -124,24 +124,6 @@ has 'params' =>
    isa      => HashRef[ArrayRef],
    default  => sub { {} };
 
-=item C<name>
-
-A simple string which defaults to the last part of the program classname
-and the method name. Appears as the leader in output, errors, and log lines
-
-=cut
-
-has '_name' =>
-   is       => 'lazy',
-   isa      => SimpleStr,
-   default  => sub {
-      my $self   = shift;
-      my $prefix = (split m{ :: }mx, blessed($self))[-1];
-
-      return $prefix . DOT . $self->method;
-   },
-   init_arg => 'name';
-
 =back
 
 =head1 Subroutines/Methods
@@ -164,28 +146,27 @@ sub handle_result {
    my $expected_rv = (is_hashref $args) ? $args->{expected_rv} // OK : OK;
 
    if (defined $rv and $rv <= $expected_rv) {
-      $self->output('Finished in [_1] seconds', {
-         args => [elapsed], name => $self->_name
-      }) unless $self->quiet;
+      $self->output('Finished in [_1] seconds', { args => [elapsed] })
+         unless $self->quiet;
    }
    elsif (defined $rv and $rv > OK) {
       $self->error('Terminated code [_1]', {
-         args => [$rv], name => $self->_name, no_quote_bind_values => TRUE
+         args => [$rv], no_quote_bind_values => TRUE
       });
    }
    else {
       if ($rv == UNDEFINED_RV) {
-         $self->error('Terminated with undefined rv', { name => $self->_name });
+         $self->error('Terminated with undefined rv');
       }
       else {
          if (defined $rv) {
             $self->error('Method [_1] unknown rv [_2]', {
-               args => [$method, $rv], name => $self->_name
+               args => [$method, $rv]
             });
          }
          else {
             $self->error('Method [_1] error uncaught or rv undefined', {
-               args => [$method], name => $self->_name
+               args => [$method]
             });
             $rv = UNDEFINED_RV;
          }
@@ -208,9 +189,7 @@ sub run {
    my $self   = shift;
    my $method = $self->select_method;
    my $text   = 'Started by [_1] Version [_2] Pid [_3]';
-   my $args   = {
-      args => [logname, $self->app_version, abs $PID], name => $self->_name
-   };
+   my $args   = { args => [logname, $self->app_version, abs $PID] };
 
    $self->quiet(TRUE) if is_member $method, 'help', 'run_chain';
    $self->output($text, $args) unless $self->quiet;
@@ -232,7 +211,7 @@ sub run {
    }
    else {
       $self->error('Class [_1] method [_2] not found', {
-         args => [ blessed $self, $method ], name => $self->_name
+         args => [ blessed $self, $method ]
       });
       $rv = UNDEFINED_RV;
    }
@@ -257,11 +236,9 @@ sub run_chain {
    my $self = shift;
 
    if ($self->method) {
-      $self->error('Method [_1] unknown', {
-         args => [$self->method], name => $self->_name
-      });
+      $self->error('Method [_1] unknown', { args => [$self->method] });
    }
-   else { $self->error('Method not specified', { name => $self->_name }) }
+   else { $self->error('Method not specified') }
 
    $self->exit_usage(0);
    return; # Not reached
@@ -299,15 +276,12 @@ sub _handle_run_exception {
    my $e;
 
    unless ($e = exception $error) {
-      $self->error('Method [_1] exception without error', {
-         args => [$method], name => $self->_name
-      });
+      $self->error('Method [_1] exception without error', { args => [$method]});
       return UNDEFINED_RV;
    }
 
-   $self->output($e->out, { name => $self->_name })
-      if $e->can('out') && $e->out;
-   $self->error($e->error, { args => $e->args, name => $self->_name });
+   $self->output($e->out) if $e->can('out') && $e->out;
+   $self->error($e->error, { args => $e->args });
    _output_stacktrace($error, $self->verbose) if $self->debug;
 
    return $e->can('rv')

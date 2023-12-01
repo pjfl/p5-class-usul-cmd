@@ -1,11 +1,12 @@
 package Class::Usul::Cmd::Trait::OutputLogging;
 
-use Class::Usul::Cmd::Constants qw( BRK FAILED FALSE NUL TRUE WIDTH );
+use Class::Usul::Cmd::Constants qw( BRK DOT FAILED FALSE NUL TRUE WIDTH );
 use Class::Usul::Cmd::Types     qw( Bool SimpleStr );
 use Class::Usul::Cmd::Util      qw( abs_path emit emit_err throw );
 use English                     qw( -no_match_vars );
 use File::Basename              qw( );
 use Ref::Util                   qw( is_arrayref );
+use Scalar::Util                qw( blessed );
 use Text::Autoformat            qw( autoformat );
 use Moo::Role;
 use Class::Usul::Cmd::Options;
@@ -83,12 +84,28 @@ option 'quiet' =>
    reader        => '__quiet_flag',
    short         => 'q';
 
-# Private attributes
-has '_name' =>
-   is      => 'lazy',
-   isa     => SimpleStr,
-   default => sub {
-      my $self = shift;
+=back
+
+Defines the following public attributes;
+
+=over 3
+
+=item C<leader>
+
+A simple string which defaults to the last part of the program classname
+and the method name. Appears as the leader in output, errors, and log lines
+
+=cut
+
+has 'leader' =>
+   is       => 'lazy',
+   isa      => SimpleStr,
+   default  => sub {
+      my $self   = shift;
+      my $prefix = (split m{ :: }mx, blessed $self)[-1];
+
+      return $prefix . DOT . $self->method if $self->can('method');
+
       my $config = $self->config;
       my @suffixes = qw(.pm .t);
 
@@ -104,6 +121,7 @@ has '_name' =>
       return File::Basename::basename($name, @suffixes);
    };
 
+# Private attributes
 has '_quiet_flag' =>
    is      => 'rwp',
    isa     => Bool,
@@ -114,13 +132,15 @@ has '_quiet_flag' =>
 
 =head1 Subroutines/Methods
 
+Defines the following public methods;
+
 =over 3
 
 =item C<add_leader>
 
    $leader = $self->add_leader( $text, \%opts );
 
-Prepend C<< $self->config->name >> to each line of C<$text>. If
+Prepend C<< $self->leader >> to each line of C<$text>. If
 C<< $opts->{no_lead} >> exists then do nothing. Return C<$text> with
 leader prepended
 
@@ -134,7 +154,7 @@ sub add_leader {
    $opts //= {};
 
    my $leader = $opts->{no_lead} ? NUL
-      : ($opts->{name} ? $opts->{name} : $self->_name) . BRK;
+      : ($opts->{leader} ? $opts->{leader} : $self->leader) . BRK;
 
    if ($opts->{fill}) {
       my $width = $opts->{width} // WIDTH;
