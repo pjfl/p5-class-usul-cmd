@@ -3,6 +3,7 @@ package Class::Usul::Cmd::Util;
 use strictures;
 use parent 'Exporter::Tiny';
 
+use Class::Inspector;
 use Class::Null;
 use Class::Usul::Cmd::Constants qw( EXCEPTION_CLASS FALSE SPC NUL TRUE
                                     UNTAINT_CMDLINE UNTAINT_IDENTIFIER
@@ -34,11 +35,11 @@ use Data::Printer alias => '_data_dumper', colored => TRUE, indent => 3,
 
 our @EXPORT_OK = qw( abs_path app_prefix arg_list classfile dash2under
    data_dumper delete_tmp_files elapsed emit emit_err emit_to
-   ensure_class_loaded env_prefix exception find_source get_user is_member
-   is_win32 list_attr_of loginid logname merge_attributes nap
-   nonblocking_write_pipe_pair now_dt ns_environment pad squeeze str2date_time
-   str2time strip_leader tempdir tempfile throw time2str trim untaint_cmdline
-   untaint_identifier untaint_path );
+   ensure_class_loaded env_prefix exception find_source get_classes_and_roles
+   get_user is_member is_win32 list_attr_of list_methods_of loginid logname
+   merge_attributes nap nonblocking_write_pipe_pair now_dt ns_environment pad
+   squeeze str2date_time str2time strip_leader tempdir tempfile throw time2str
+   trim untaint_cmdline untaint_identifier untaint_path );
 
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
@@ -311,6 +312,37 @@ sub find_source ($) {
    return;
 }
 
+=item C<get_classes_and_roles>
+
+   $array_ref = get_classes_and_roles $object_ref
+
+Returns the list of classes and roles from which the target object reference
+is composed
+
+=cut
+
+sub get_classes_and_roles ($) {
+   my $target = shift;
+
+   ensure_class_loaded 'mro';
+
+   my @classes = @{ mro::get_linear_isa(blessed $target) };
+   my %uniq = ();
+
+   while (my $class = shift @classes) {
+      $class = (split m{ __WITH__ }mx, $class)[0];
+      next if $class =~ m{ ::_BASE \z }mx;
+      $class =~ s{ \A Role::Tiny::_COMPOSABLE:: }{}mx;
+      next if $uniq{$class};
+      $uniq{$class}++;
+
+      push @classes, keys %{$Role::Tiny::APPLIED_TO{$class}}
+         if exists $Role::Tiny::APPLIED_TO{$class};
+   }
+
+   return [ sort keys %uniq ];
+}
+
 =item C<get_user>
 
    $user_object = get_user $optional_uid_or_name;
@@ -388,7 +420,7 @@ documentation, and current value
 sub list_attr_of ($;@) {
    my ($obj, $methods, @except) = @_;
 
-   ensure_class_loaded('Pod::Eventual::Simple');
+   ensure_class_loaded 'Pod::Eventual::Simple';
 
    push @except, 'new' unless is_member 'new', @except;
 
@@ -397,6 +429,31 @@ sub list_attr_of ($;@) {
           grep { $_->[0] ne 'Moo::Object' and not is_member $_->[1], @except }
           map  { m{ \A (.+) \:\: ([^:]+) \z }mx; [$1, $2] }
               @{ $methods };
+}
+
+=item C<list_methods_of>
+
+   $method_list = list_methods_of $object_ref;
+
+Lists the methods of the supplied object reference
+
+=cut
+
+sub list_methods_of ($) {
+   my $target  = shift;
+   my $methods = [];
+   my %seen    = ();
+
+   for my $class (reverse @{get_classes_and_roles $target}) {
+      next if $class eq 'Moo::Object';
+      push @{$methods},
+         map  { my $k = (split m{ :: }mx, $_)[-1]; $seen{$k} = TRUE; $_ }
+         grep { my $k = (split m{ :: }mx, $_)[-1]; !$seen{$k} }
+         grep { $_ !~ m{ \A Moo::Object }mx }
+         @{Class::Inspector->methods($class, 'full', 'public')};
+   }
+
+   return $methods;
 }
 
 =item C<loginid>

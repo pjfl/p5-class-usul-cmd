@@ -5,9 +5,10 @@ use attributes ();
 use Class::Usul::Cmd::Constants qw( DUMP_EXCEPT FAILED FALSE NUL OK SPC TRUE );
 use Class::Usul::Cmd::Types     qw( ArrayRef Bool DataEncoding Str );
 use Class::Usul::Cmd::Util      qw( dash2under data_dumper emit emit_to
-                                    ensure_class_loaded find_source is_member
-                                    list_attr_of pad tempfile throw
-                                    untaint_cmdline untaint_identifier );
+                                    ensure_class_loaded find_source
+                                    get_classes_and_roles is_member
+                                    list_attr_of list_methods_of pad tempfile
+                                    throw untaint_cmdline untaint_identifier );
 use English                     qw( -no_match_vars );
 use File::DataClass::IO         qw( io );
 use File::DataClass::Types      qw( File );
@@ -245,17 +246,7 @@ out the attributes and values
 
 sub dump_config : method {
    my $self    = shift;
-   my $methods = [];
-   my %seen    = ();
-
-   for my $class (reverse @{$self->_get_classes_and_roles($self->config)}) {
-      next if $class eq 'Moo::Object';
-      push @{$methods},
-         map  { my $k = (split m{ :: }mx, $_)[-1]; $seen{$k} = TRUE; $_ }
-         grep { my $k = (split m{ :: }mx, $_)[-1]; !$seen{$k} }
-         grep { $_ !~ m{ \A Moo::Object }mx }
-         @{Class::Inspector->methods($class, 'full', 'public')};
-   }
+   my $methods = list_methods_of $self->config;
 
    $self->dumper([ list_attr_of $self->config, $methods, DUMP_EXCEPT ]);
 
@@ -278,7 +269,7 @@ sub dump_self : method {
 
 =item C<dumper>
 
-Calls L<data dumper|Class::Usul::Cmd::Trait::Util/data_dumper> on the supplied
+Calls L<data dumper|Class::Usul::Cmd::Util/data_dumper> on the supplied
 arguments
 
 =cut
@@ -335,7 +326,7 @@ sub list_methods : method {
 
    my $abstract = {};
    my $max = 0;
-   my $classes = $self->_get_classes_and_roles;
+   my $classes = get_classes_and_roles $self;
 
    for my $method (@{_list_methods_of($self)}) {
       my $mlen = length $method;
@@ -386,30 +377,6 @@ sub _exit_version {
 
    $self->output('Version ' . $self->app_version);
    exit OK;
-}
-
-sub _get_classes_and_roles {
-   my ($self, $target) = @_;
-
-   $target //= $self;
-
-   ensure_class_loaded 'mro';
-
-   my @classes = @{ mro::get_linear_isa(blessed $target) };
-   my %uniq = ();
-
-   while (my $class = shift @classes) {
-      $class = (split m{ __WITH__ }mx, $class)[0];
-      next if $class =~ m{ ::_BASE \z }mx;
-      $class =~ s{ \A Role::Tiny::_COMPOSABLE:: }{}mx;
-      next if $uniq{$class};
-      $uniq{$class}++;
-
-      push @classes, keys %{$Role::Tiny::APPLIED_TO{$class}}
-         if exists $Role::Tiny::APPLIED_TO{$class};
-   }
-
-   return [ sort keys %uniq ];
 }
 
 sub _man_page_from {
@@ -463,7 +430,7 @@ sub _usage_for {
 
    my $fullname = sub_fullname($self->can($method));
 
-   for my $class (@{$self->_get_classes_and_roles}) {
+   for my $class (@{get_classes_and_roles $self}) {
       next unless $fullname eq "${class}::${method}";
 
       ensure_class_loaded 'Pod::Simple::Select';
