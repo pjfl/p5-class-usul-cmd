@@ -3,9 +3,7 @@ package Class::Usul::Cmd::Util;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use Class::Inspector;
-use Class::Null;
-use Class::Usul::Cmd::Constants qw( EXCEPTION_CLASS FALSE SPC NUL TRUE
+use Class::Usul::Cmd::Constants qw( EXCEPTION_CLASS FALSE SPC NUL SECRET TRUE
                                     UNTAINT_CMDLINE UNTAINT_IDENTIFIER
                                     UNTAINT_PATH );
 use Cwd                         qw( );
@@ -15,12 +13,16 @@ use Fcntl                       qw( F_SETFL O_NONBLOCK );
 use File::DataClass::IO         qw( io );
 use File::Spec::Functions       qw( catfile tmpdir );
 use List::Util                  qw( first );
+use MIME::Base64                qw( decode_base64 encode_base64 );
 use Module::Runtime             qw( is_module_name require_module );
 use Ref::Util                   qw( is_arrayref is_hashref );
 use Scalar::Util                qw( blessed openhandle );
 use Time::HiRes                 qw( usleep );
 use Unexpected::Functions       qw( is_class_loaded DateTimeCoercion Tainted
                                     Unspecified );
+use Class::Inspector;
+use Class::Null;
+use Crypt::CBC;
 use User::pwent;
 
 use Data::Printer alias => '_data_dumper', colored => TRUE, indent => 3,
@@ -34,7 +36,7 @@ use Data::Printer alias => '_data_dumper', colored => TRUE, indent => 3,
    }];
 
 our @EXPORT_OK = qw( abs_path app_prefix arg_list classfile dash2under
-   data_dumper delete_tmp_files elapsed emit emit_err emit_to
+   data_dumper decrypt delete_tmp_files elapsed emit emit_err emit_to encrypt
    ensure_class_loaded env_prefix exception find_source get_classes_and_roles
    get_user is_member is_win32 list_attr_of list_methods_of loginid logname
    merge_attributes nap nonblocking_write_pipe_pair now_dt ns_environment pad
@@ -158,6 +160,28 @@ sub data_dumper (;@) {
    return TRUE;
 }
 
+=item C<decrypt>
+
+   $plain = decrypt( $key, $encrypted );
+
+Base64 decodes and decrypts the encrypted text passed in the C<$encrypted>
+argument using C<$key> and returns the plain text. L<Crypt::Twofish2> is used
+to do the decryption
+
+=cut
+
+sub decrypt ($$) {
+   my ($key, $encrypted) = @_;
+
+   my $cipher = Crypt::CBC->new(
+      -cipher => 'Twofish2',
+      -key    => $key || SECRET,
+      -pbkdf  =>'pbkdf2'
+   );
+
+   return $cipher->decrypt( decode_base64 $encrypted );
+}
+
 =item C<delete_tmp_files>
 
    delete_tmp_files [$object], [$dir];
@@ -234,6 +258,27 @@ sub emit_to ($;@) {
    local $OS_ERROR;
 
    return (print {$handle} @args or throw('IO error: [_1]', [$OS_ERROR]));
+}
+
+=item C<encrypt>
+
+   $encoded = encrypt( $key, $plain );
+
+Encrypts the plain text passed in the C<$plain> argument using C<$key> and
+returns it Base64 encoded. L<Crypt::Twofish2> is used to do the encryption
+
+=cut
+
+sub encrypt ($$) {
+   my ($key, $plain) = @_;
+
+   my $cipher = Crypt::CBC->new(
+      -cipher => 'Twofish2',
+      -key    => $key || SECRET,
+      -pbkdf  =>'pbkdf2'
+   );
+
+   return encode_base64($cipher->encrypt($plain), NUL);
 }
 
 =item C<ensure_class_loaded>

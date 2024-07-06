@@ -3,12 +3,15 @@ package Class::Usul::Cmd::Constants;
 use strictures;
 use parent 'Exporter::Tiny';
 
+use Digest::SHA1 qw( sha1_hex );
+use English      qw( -no_match_vars );
+use Ref::Util    qw( is_arrayref );
+use User::pwent  qw( getpwuid );
 use Class::Usul::Cmd::Exception;
-use Ref::Util qw( is_arrayref );
 
 our @EXPORT = qw( AS_PARA AS_PASSWORD BRK DOT COMMA DEFAULT_ENCODING
                   DUMP_EXCEPT EXCEPTION_CLASS FAILED FALSE LOG_LEVELS NO NUL OK
-                  QUIT QUOTED_RE SPC TRUE UNDEFINED_RV UNTAINT_CMDLINE
+                  QUIT QUOTED_RE SECRET SPC TRUE UNDEFINED_RV UNTAINT_CMDLINE
                   UNTAINT_IDENTIFIER UNTAINT_PATH WIDTH YES );
 
 =pod
@@ -92,6 +95,25 @@ sub Log_Levels {
    ) unless is_arrayref $levels and defined $levels->[0];
 
    return $Log_Levels = $levels;
+}
+
+=item C<Secret>
+
+Used to encrypt/decrypt data
+
+=cut
+
+my $secret = USERNAME() . __FILE__;
+
+sub Secret {
+   my ($self, $value) = @_;
+
+   return $secret unless defined $value;
+
+   EXCEPTION_CLASS->throw("Secret ${value} is not long enough")
+      unless length $value > 16;
+
+   return $secret = $value;
 }
 
 =back
@@ -240,6 +262,12 @@ which now has installation and indexing issues
 
 sub QUOTED_RE () { qr{ (?:(?:\")(?:[^\\\"]*(?:\\.[^\\\"]*)*)(?:\")|(?:\')(?:[^\\\']*(?:\\.[^\\\']*)*)(?:\')|(?:\`)(?:[^\\\`]*(?:\\.[^\\\`]*)*)(?:\`)) }mx }
 
+=item C<SECRET>
+
+=cut
+
+sub SECRET   () { sha1_hex( __PACKAGE__->Secret ) }
+
 =item C<SPC>
 
 Space character
@@ -288,6 +316,14 @@ Regular expression used to untaint path strings
 =cut
 
 sub UNTAINT_PATH () { qr{ \A ([^\$%&\*;<>\`|]+) \z }mx }
+
+=item C<USERNAME>
+
+User name returned by the system
+
+=cut
+
+sub USERNAME { getpwuid($EUID)->name }
 
 =item C<WIDTH>
 
