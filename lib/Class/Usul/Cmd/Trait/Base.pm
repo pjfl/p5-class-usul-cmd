@@ -55,7 +55,7 @@ L<logger|Class::Usul::Cmd::Types/Logger> type
 
 =cut
 
-has 'log' => is => 'ro', isa => Logger|Undef;
+has 'log' => is => 'rw', isa => Logger|Undef;
 
 =back
 

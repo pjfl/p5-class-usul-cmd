@@ -1,5 +1,6 @@
 Revision history for Class::Usul::Cmd
 
+          - Filters more crap from log lines
           - Adds encrypt/decrypt functions to Utils
           - Made functions of some introspection methods
           - Exposed leader attriubte instead of _name

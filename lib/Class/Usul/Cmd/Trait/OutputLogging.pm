@@ -183,7 +183,7 @@ sub error {
 
    if ($self->log) {
       $self->log->error($self->add_leader($_, $opts))
-         for (split m{ \n }mx, "${text}");
+         for (grep { defined && length  } split m{ \n }mx, "${text}");
    }
 
    emit_err $self->add_leader($text, $opts);
@@ -212,7 +212,7 @@ sub fatal {
 
    if ($self->log) {
       $self->log->alert($self->add_leader($_, $opts))
-         for (split m{ \n }mx, $text);
+         for (grep { defined && length  } split m{ \n }mx, $text);
    }
 
    emit_err $self->add_leader($text, $opts);
@@ -238,7 +238,7 @@ sub info {
 
    if ($self->log) {
       $self->log->info($self->add_leader($_, $opts))
-         for (split m{ \n }mx, $text);
+         for (grep { defined && length  } split m{ \n }mx, $text);
    }
 
    emit $self->add_leader($text, $opts) unless $self->quiet or $opts->{quiet};
@@ -310,7 +310,7 @@ sub warning {
 
    if ($self->log) {
       $self->log->warn($self->add_leader($_, $opts))
-         for (split m{ \n }mx, $text);
+         for (grep { defined && length  } split m{ \n }mx, $text);
    }
 
    emit $self->add_leader($text, $opts) unless $self->quiet || $opts->{quiet};
