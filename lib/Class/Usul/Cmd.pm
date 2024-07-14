@@ -1,7 +1,7 @@
 package Class::Usul::Cmd;
 
 use 5.010001;
-use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 13 $ =~ /\d+/gmx );
+use version; our $VERSION = qv( sprintf '0.1.%d', q$Rev: 14 $ =~ /\d+/gmx );
 
 use Moo;
 use Class::Usul::Cmd::Options;

@@ -104,7 +104,7 @@ has 'leader' =>
       my $self   = shift;
       my $prefix = (split m{ :: }mx, blessed $self)[-1];
 
-      return $prefix . DOT . $self->method if $self->can('method');
+      return $prefix . DOT . ($self->method || 'run') if $self->can('method');
 
       my $config = $self->config;
       my @suffixes = qw(.pm .t);

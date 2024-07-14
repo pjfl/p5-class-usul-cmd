@@ -264,6 +264,7 @@ sub select_method {
          $self->_set_method($method);
          $self->next_argv;
       }
+      else { $method = 'run_chain' }
    }
 
    return $method ? $method : 'run_chain';
