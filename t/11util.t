@@ -20,6 +20,8 @@ is classfile('Test::App'), catfile(qw( Test App.pm )), 'classfile';
 
 is dash2under('foo-bar'), 'foo_bar', 'dash2under';
 
+is distname('Class::Usul::Cmd'), 'class-usul-cmd', 'distname';
+
 ok defined elapsed, 'elapsed';
 
 my ($stdout, $stderr, $exit) = capture { emit 'test'; }; chomp $stdout;

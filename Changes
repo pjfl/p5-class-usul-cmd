@@ -1,5 +1,6 @@
 Revision history for Class::Usul::Cmd
 
+          - Adds distname to Utils
           - Fixes select method when defaulting to run_chain
           - Filters more crap from log lines
           - Adds encrypt/decrypt functions to Utils

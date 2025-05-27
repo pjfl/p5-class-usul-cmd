@@ -264,9 +264,11 @@ sub QUOTED_RE () { qr{ (?:(?:\")(?:[^\\\"]*(?:\\.[^\\\"]*)*)(?:\")|(?:\')(?:[^\\
 
 =item C<SECRET>
 
+SHA checksum of this package's class attribute Secret
+
 =cut
 
-sub SECRET   () { sha1_hex( __PACKAGE__->Secret ) }
+sub SECRET () { sha1_hex( __PACKAGE__->Secret ) }
 
 =item C<SPC>
 

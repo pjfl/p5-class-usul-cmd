@@ -36,12 +36,13 @@ use Data::Printer alias => '_data_dumper', colored => TRUE, indent => 3,
    }];
 
 our @EXPORT_OK = qw( abs_path app_prefix arg_list classfile dash2under
-   data_dumper decrypt delete_tmp_files elapsed emit emit_err emit_to encrypt
-   ensure_class_loaded env_prefix exception find_source get_classes_and_roles
-   get_user is_member is_win32 list_attr_of list_methods_of loginid logname
-   merge_attributes nap nonblocking_write_pipe_pair now_dt ns_environment pad
-   squeeze str2date_time str2time strip_leader tempdir tempfile throw time2str
-   trim untaint_cmdline untaint_identifier untaint_path );
+   data_dumper decrypt delete_tmp_files distname elapsed emit emit_err emit_to
+   encrypt ensure_class_loaded env_prefix exception find_source
+   get_classes_and_roles get_user is_member is_win32 list_attr_of
+   list_methods_of loginid logname merge_attributes nap
+   nonblocking_write_pipe_pair now_dt ns_environment pad squeeze str2date_time
+   str2time strip_leader tempdir tempfile throw time2str trim untaint_cmdline
+   untaint_identifier untaint_path );
 
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
@@ -168,6 +169,8 @@ Base64 decodes and decrypts the encrypted text passed in the C<$encrypted>
 argument using C<$key> and returns the plain text. L<Crypt::Twofish2> is used
 to do the decryption
 
+If C<$key> is false will use L<Class::Usul::Cmd::Constants/SECRET>
+
 =cut
 
 sub decrypt ($$) {
@@ -193,6 +196,20 @@ which defaults to L</tempdir>
 
 sub delete_tmp_files (;$$){
    return io( $_[1] // tempdir($_[0]) )->delete_tmp_files;
+}
+
+=item C<distname>
+
+   distname $application_class;
+
+Converts a classname into a string suitable for use as an identifier
+
+=cut
+
+sub distname (;$) {
+   (my $v = $_[0] // NUL) =~ s{ :: }{-}gmx;
+
+   return lc $v;
 }
 
 =item C<elapsed>
