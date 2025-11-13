@@ -152,7 +152,7 @@ sub handle_result {
    elsif (defined $rv and $rv > OK) {
       $self->error('Terminated code [_1]', {
          args => [$rv], no_quote_bind_values => TRUE
-      });
+      }) unless $self->quiet;
    }
    else {
       if ($rv == UNDEFINED_RV) {
