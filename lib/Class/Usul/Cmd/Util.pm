@@ -12,7 +12,7 @@ use English                     qw( -no_match_vars );
 use Fcntl                       qw( F_SETFL O_NONBLOCK );
 use File::DataClass::IO         qw( io );
 use File::Spec::Functions       qw( catfile tmpdir );
-use List::Util                  qw( first );
+use List::Util                  qw( any first );
 use MIME::Base64                qw( decode_base64 encode_base64 );
 use Module::Runtime             qw( is_module_name require_module );
 use Ref::Util                   qw( is_arrayref is_hashref );
@@ -38,7 +38,7 @@ use Data::Printer alias => '_data_dumper', colored => TRUE, indent => 3,
 our @EXPORT_OK = qw( abs_path app_prefix arg_list classfile dash2under
    data_dumper decrypt delete_tmp_files distname elapsed emit emit_err emit_to
    encrypt ensure_class_loaded env_prefix exception find_source
-   get_classes_and_roles get_user is_member is_win32 list_attr_of
+   get_classes_and_roles get_user includes is_member is_win32 list_attr_of
    list_methods_of loginid logname merge_attributes nap
    nonblocking_write_pipe_pair now_dt ns_environment pad squeeze str2date_time
    str2time strip_leader tempdir tempfile throw time2str trim untaint_cmdline
@@ -427,6 +427,21 @@ sub get_user (;$) {
    return getpwuid($user // $UID);
 }
 
+=item C<includes>
+
+   $wanted = includes $wanted, $list
+
+Searches through C<list> for C<wanted>. Return C<wanted> if found null
+otherwise
+
+=cut
+
+sub includes ($$) {
+   my ($wanted, $list) = @_;
+
+   return (any { $_ eq $wanted } @{$list}) ? $wanted : q();
+}
+
 =item C<is_member>
 
    $bool = is_member 'test_value', qw( a_value test_value b_value );
@@ -472,7 +487,7 @@ sub is_win32 () {
 
 =item C<list_attr_of>
 
-   $attribute_list = list_attr_of $object_ref, @exception_list;
+   $attribute_list = list_attr_of $object_ref, $methods, @exception_list;
 
 Lists the attributes of the object reference, including defining class name,
 documentation, and current value
@@ -495,14 +510,17 @@ sub list_attr_of ($;@) {
 
 =item C<list_methods_of>
 
-   $method_list = list_methods_of $object_ref;
+   $method_list = list_methods_of $object_ref, $type;
 
 Lists the methods of the supplied object reference
 
 =cut
 
-sub list_methods_of ($) {
-   my $target  = shift;
+sub list_methods_of ($;$) {
+   my ($target, $type) = @_;
+
+   $type //= 'public';
+
    my $methods = [];
    my %seen    = ();
 
@@ -512,7 +530,7 @@ sub list_methods_of ($) {
          map  { my $k = (split m{ :: }mx, $_)[-1]; $seen{$k} = TRUE; $_ }
          grep { my $k = (split m{ :: }mx, $_)[-1]; !$seen{$k} }
          grep { $_ !~ m{ \A Moo::Object }mx }
-         @{Class::Inspector->methods($class, 'full', 'public')};
+         @{Class::Inspector->methods($class, 'full', $type)};
    }
 
    return $methods;

@@ -10,6 +10,7 @@ requires "File::DataClass" => "v0.73.1";
 requires "Getopt::Long::Descriptive" => "0.111";
 requires "IO::Interactive" => "1.023";
 requires "JSON::MaybeXS" => "1.004004";
+requires "List::Util" => "1.65";
 requires "Module::Runtime" => "0.016";
 requires "Moo" => "2.005005";
 requires "Pod::Eventual" => "0.094001";

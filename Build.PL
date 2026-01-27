@@ -24,6 +24,7 @@ my $prereqs  = {
     'Getopt::Long::Descriptive' => '0.111',
     'IO::Interactive' => '1.023',
     'JSON::MaybeXS' => '1.004004',
+    'List::Util' => '1.65',
     'Module::Runtime' => '0.016',
     'Moo' => '2.005005',
     'Pod::Eventual' => '0.094001',

@@ -99,7 +99,8 @@ sub Log_Levels {
 
 =item C<Secret>
 
-Used to encrypt/decrypt data
+Class attribute. Used to encrypt/decrypt data. The default value uses
+information available at install and runtime
 
 =cut
 
@@ -180,7 +181,7 @@ sub DEFAULT_ENCODING () { 'UTF-8' }
 
 =item C<DUMP_EXCEPT>
 
-Do not dump these symbols when introspecting objects
+Do not dump these symbols when introspecting objects. Returns a list
 
 =cut
 
