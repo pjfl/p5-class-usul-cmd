@@ -20,6 +20,7 @@ use Scalar::Util                qw( blessed openhandle );
 use Time::HiRes                 qw( usleep );
 use Unexpected::Functions       qw( is_class_loaded DateTimeCoercion Tainted
                                     Unspecified );
+use JSON::MaybeXS               qw( );
 use Class::Inspector;
 use Class::Null;
 use Crypt::CBC;
@@ -36,13 +37,13 @@ use Data::Printer alias => '_data_dumper', colored => TRUE, indent => 3,
    }];
 
 our @EXPORT_OK = qw( abs_path app_prefix arg_list classfile dash2under
-   data_dumper decrypt delete_tmp_files distname elapsed emit emit_err emit_to
-   encrypt ensure_class_loaded env_prefix exception find_source
-   get_classes_and_roles get_user includes is_member is_win32 list_attr_of
-   list_methods_of loginid logname merge_attributes nap
-   nonblocking_write_pipe_pair now_dt ns_environment pad squeeze str2date_time
-   str2time strip_leader tempdir tempfile throw time2str trim untaint_cmdline
-   untaint_identifier untaint_path );
+   data_dumper decrypt delete_tmp_files distname dump_file elapsed emit
+   emit_err emit_to encrypt ensure_class_loaded env_prefix exception
+   find_source fullname get_classes_and_roles get_user includes is_member
+   is_win32 list_attr_of list_methods_of load_file loginid logname
+   merge_attributes nap nonblocking_write_pipe_pair now_dt ns_environment pad
+   squeeze str2date_time str2time strip_leader tempdir tempfile throw time2str
+   trim untaint_cmdline untaint_identifier untaint_path );
 
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
@@ -202,14 +203,34 @@ sub delete_tmp_files (;$$){
 
    distname $application_class;
 
-Converts a classname into a string suitable for use as an identifier
+Converts a classname into a string suitable for use as a distribution name.
+At v0.0.17 dropped lower caseing the result
 
 =cut
 
 sub distname (;$) {
    (my $v = $_[0] // NUL) =~ s{ :: }{-}gmx;
 
-   return lc $v;
+   return $v;
+}
+
+=item C<dump_file>
+
+   dump_file $path, $data;
+
+Encodes data as JSON (based on file extension) and prints to the specified file
+
+=cut
+
+sub dump_file ($$) {
+   my ($path, $data) = @_;
+
+   if ($path->extension eq 'json') {
+      $path->print(_json_parser()->encode($data));
+   }
+   else { throw('File type [_1] unsupported', [$path->extension]) }
+
+   return;
 }
 
 =item C<elapsed>
@@ -374,6 +395,24 @@ sub find_source ($) {
    return;
 }
 
+=item C<fullname>
+
+   $fullname = fullname;
+
+Returns the untainted first sub field from the gecos attribute of the
+object returned by a call to L</get_user>. Returns the null string if
+the gecos attribute value is false
+
+=cut
+
+sub fullname () {
+   my $v = (split m{ \s* , \s * }msx, (get_user()->gecos // q()))[ 0 ];
+
+   $v //= q(); $v =~ s{ [\&] }{}gmx; # Coz af25e158-d0c7-11e3-bdcb-31d9eda79835
+
+   return untaint_cmdline($v);
+}
+
 =item C<get_classes_and_roles>
 
    $array_ref = get_classes_and_roles $object_ref
@@ -534,6 +573,30 @@ sub list_methods_of ($;$) {
    }
 
    return $methods;
+}
+
+=item C<load_file>
+
+   $data = load_file $path, $flag;
+
+Loads the given file and decodes it returning a hash reference. If C<flag>
+is true returns the raw data otherwise booleans are returned unblessed
+
+=cut
+
+sub load_file ($;$) {
+   my ($path, $flag) = @_;
+
+   my $data = {};
+
+   if ($path->extension eq 'json') {
+      my $args = { unblessed_bool => $flag ? 0 : 1 };
+
+      $data = _json_parser($args)->decode(scalar io($path)->slurp);
+   }
+   else { throw('File type [_1] unsupported', [$path->extension]) }
+
+   return $data;
 }
 
 =item C<loginid>
@@ -1170,6 +1233,14 @@ sub _get_pod_content_for_attr {
    $pod = squeeze($pod);
    $pod = $1 if $pod =~ m{ \A (.+) \z }msx;
    return $pod;
+}
+
+sub _json_parser {
+   my $args = shift // {};
+
+   return JSON::MaybeXS->new({
+      utf8 => 1, pretty => 1, convert_blessed => 1, %{$args}
+   });
 }
 
 my $datetime_loaded;

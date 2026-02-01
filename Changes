@@ -1,5 +1,6 @@
 Revision history for Class::Usul::Cmd
 
+          - Adds some more Util methods
           - Adds includes method to Util
           - Suppress terminated error in quiet mode
           - Adds distname to Utils
