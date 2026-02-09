@@ -3,9 +3,9 @@ package Class::Usul::Cmd::Util;
 use strictures;
 use parent 'Exporter::Tiny';
 
-use Class::Usul::Cmd::Constants qw( EXCEPTION_CLASS FALSE SPC NUL SECRET TRUE
-                                    UNTAINT_CMDLINE UNTAINT_IDENTIFIER
-                                    UNTAINT_PATH );
+use Class::Usul::Cmd::Constants qw( DUMP_EXCEPT EXCEPTION_CLASS FALSE SPC
+                                    NUL SECRET TRUE UNTAINT_CMDLINE
+                                    UNTAINT_IDENTIFIER UNTAINT_PATH );
 use Cwd                         qw( );
 use Date::Format                  ( );
 use English                     qw( -no_match_vars );
@@ -538,7 +538,7 @@ sub list_attr_of ($;@) {
 
    ensure_class_loaded 'Pod::Eventual::Simple';
 
-   push @except, 'new' unless is_member 'new', @except;
+   push @except, DUMP_EXCEPT;
 
    return map  { my $attr = $_->[0]; [ @{$_}, $obj->$attr ] }
           map  { [ $_->[1], $_->[0], _get_pod_content_for_attr(@{$_}) ] }

@@ -1,5 +1,6 @@
 Revision history for Class::Usul::Cmd
 
+          - Fixes dump except in list attr of
           - Adds flush to dump_file utility
           - Adds some more Util methods
           - Adds includes method to Util

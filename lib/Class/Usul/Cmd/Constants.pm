@@ -46,7 +46,8 @@ List of methods to exclude from dumping out when introspecting objects
 =cut
 
 my $Dump_Except = [
-   qw( BUILDARGS BUILD DOES after around before extends has new with )
+   qw( BUILDARGS BUILD DOES DumpExcept
+       after around before extends has new with )
 ];
 
 sub Dump_Except {
