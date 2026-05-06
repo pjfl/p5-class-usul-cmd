@@ -182,6 +182,14 @@ has 'keep_fhs' =>
       return [];
    };
 
+=itme C<leader>
+
+Used in logging
+
+=cut
+
+has 'leader' => is => 'ro', isa => Str, default => 'RunCmd';
+
 =item C<log>
 
 A log object. Calls are made to it at the debug level
@@ -456,7 +464,7 @@ sub _detach_process { # And this method came from MooseX::Daemonize
       }
    }
 
-   $self->pidfile->println($PID);
+   $self->pidfile->println($PID)->flush;
    return;
 }
 
@@ -512,7 +520,7 @@ sub _new_async_response {
    my $prog = basename($self->cmd->[0]);
    my $out  = "Running ${prog}(${pid}) in the background";
 
-   $self->log->debug($out) if $self->has_log;
+#   $self->log->debug($out, $self) if $self->has_log;
 
    return $self->response_class->new(out => $out, pid => $pid);
 }
@@ -562,7 +570,7 @@ sub _return_codes_or_throw {
    if ($rv > $self->expected_rv) {
       my $error = "${e_str} rv ${rv}";
 
-      $self->log->debug($error) if $self->has_log;
+      $self->log->debug($error, $self) if $self->has_log;
 
       throw $error, level => 3, rv => $rv;
    }
@@ -601,7 +609,7 @@ sub _run_cmd_using_fork_and_exec {
    my $pipes   = _four_nonblocking_pipe_pairs();
    my $cmd_str = _quoted_join(@{$self->cmd});
 
-   $self->log->debug("Running ${cmd_str} using fork and exec")
+   $self->log->debug("Running ${cmd_str} using fork and exec", $self)
       if $self->has_log;
 
    {
@@ -665,7 +673,9 @@ sub _run_cmd_using_ipc_run {
    my $cmd_str = _quoted_join(@{$self->cmd}, @cmd_args);
 
    $cmd_str .= ' &' if $self->async;
-   $self->log->debug("Running ${cmd_str} using ipc run") if $self->has_log;
+
+   $self->log->debug("Running ${cmd_str} using ipc run", $self)
+      if $self->has_log;
 
    try {
       my $tmout = $self->timeout;
@@ -723,7 +733,7 @@ sub _run_cmd_using_ipc_run {
 
    if ($rv > $self->expected_rv) {
       $error = $error ? "${error} rv ${rv}" : "Unknown error rv ${rv}";
-      $self->log->debug($error) if $self->has_log;
+      $self->log->debug($error, $self) if $self->has_log;
       throw $error, out => $out, rv => $rv;
    }
 
@@ -745,7 +755,7 @@ sub _run_cmd_using_open3 { # Robbed in part from IPC::Cmd
    my $err_hand = _err_handler($self->err, \$filtered, \$stderr);
    my $out_hand = _out_handler($self->out, \$filtered, \$stdout);
 
-   $self->log->debug("Running ${cmd} using open3") if $self->has_log;
+   $self->log->debug("Running ${cmd} using open3", $self) if $self->has_log;
 
    my $e_num;
 
@@ -818,7 +828,8 @@ sub _run_cmd_using_system {
                                   : $err ne 'out'  ? " 2>${err}"  : ' 2>&1';
 
    $cmd .= ' & echo $! 1>' . $self->pidfile->pathname if $self->async;
-   $self->log->debug("Running ${cmd} using system") if $self->has_log;
+
+   $self->log->debug("Running ${cmd} using system", $self) if $self->has_log;
 
    {
       local ($CHILD_ENUM, $CHILD_PID) = (0, 0);
@@ -840,7 +851,7 @@ sub _run_cmd_using_system {
       my $os_error = $OS_ERROR;
 
       $self->log->debug(
-         "System rv ${rv} child pid ${CHILD_PID} error ${CHILD_ENUM}"
+         "System rv ${rv} child pid ${CHILD_PID} error ${CHILD_ENUM}", $self
       ) if $self->has_log;
       # On some systems the child handler reaps the child process so the system
       # call returns -1 and sets $OS_ERROR to 'No child processes'. This line
@@ -891,7 +902,7 @@ sub _run_cmd_using_system {
 
    if ($rv > $self->expected_rv) {
       $error = $error ? "${error} rv ${rv}" : "Unknown error rv ${rv}";
-      $self->log->debug($error) if $self->has_log;
+      $self->log->debug($error, $self) if $self->has_log;
       throw $error, out => $out, rv => $rv;
    }
 
